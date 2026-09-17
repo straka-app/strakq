@@ -1,0 +1,3790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Straka — Instructor Console</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='none' stroke='%230E3B2E' stroke-width='14' stroke-dasharray='180 60' stroke-linecap='round'/><circle cx='50' cy='50' r='12' fill='%23EFA51C'/></svg>">
+
+<!-- ===== Tailwind (utility layer, themed to Straka console tokens) ===== -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        pine:  {DEFAULT:'#0E3B2E',2:'#0A2A21',3:'#135141'},
+        gold:  {DEFAULT:'#EFA51C',deep:'#D98E0F',hi:'#F7C766',ink:'#7A4E00'},
+        paper: '#FBFCF8',
+        sage:  '#ECF0E6',
+        ink:   '#132A21',
+        ok:    '#1F8A5B',
+        red:   '#BF4229',
+        teal:  '#0F766E',
+      },
+      fontFamily: {
+        disp: ['"Bricolage Grotesque"','system-ui','sans-serif'],
+        body:['"Instrument Sans"','system-ui','sans-serif'],
+        mono:['"IBM Plex Mono"','ui-monospace','monospace'],
+      },
+      boxShadow: {
+        soft:'0 1px 2px rgba(13,37,29,.06),0 8px 24px -14px rgba(13,37,29,.18)',
+        lift:'0 2px 4px rgba(13,37,29,.08),0 18px 40px -18px rgba(13,37,29,.28)',
+      }
+    }
+  }
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase.js"></script>
+<style>
+/* ============================================================
+   STRAKA · INSTRUCTOR CONSOLE · DESIGN SYSTEM v2
+   Identity preserved: paper/sage · pine · gold.
+   Every selector, keyframe & custom-property name unchanged
+   so the app logic keeps working exactly as before.
+============================================================ */
+
+/* ============ TOKENS ============ */
+:root{
+--bg:#ECF0E6; --paper:#FBFCF8; --ink:#132A21; --mut:#5C6E63;
+--pine:#0E3B2E; --pine2:#0A2A21; --pine3:#135141;
+--line:rgba(19,40,31,.14); --line2:rgba(19,40,31,.08);
+--gold:#EFA51C; --gold2:#D98E0F; --gold-hi:#F7C766; --gold-ink:#7A4E00; --amber-bg:#FBF1DA;
+--ok:#1F8A5B; --ok-bg:#E2F1E7; --red:#BF4229; --red-bg:#F7E5E0;
+--teal:#0F766E; --teal-bg:#DFF0EE; --slate:#5B6B62; --slate-bg:#ECEFEA;
+--brown:#9A5B33; --brown-bg:#F3E7DC;
+--disp:'Bricolage Grotesque',system-ui,sans-serif;
+--body:'Instrument Sans',system-ui,sans-serif;
+--mono:'IBM Plex Mono',ui-monospace,monospace;
+--sh:0 1px 2px rgba(13,37,29,.06),0 8px 24px -14px rgba(13,37,29,.18);
+--sh2:0 2px 4px rgba(13,37,29,.08),0 18px 40px -18px rgba(13,37,29,.28);
+--sh3:0 4px 10px rgba(13,37,29,.1),0 36px 72px -28px rgba(13,37,29,.4);
+--e-out:cubic-bezier(.22,.8,.3,1);
+--e-spring:cubic-bezier(.34,1.56,.64,1);
+accent-color:var(--pine);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+font-family:var(--body);color:var(--ink);font-size:15px;line-height:1.5;
+background:
+ radial-gradient(1100px 480px at 88% -120px, rgba(239,165,28,.12), transparent 60%),
+ radial-gradient(900px 620px at -12% 112%, rgba(14,59,46,.08), transparent 55%),
+ linear-gradient(rgba(14,59,46,.045) 1px, transparent 1px),
+ linear-gradient(90deg, rgba(14,59,46,.045) 1px, transparent 1px),
+ url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.3'/%3E%3C/svg%3E"),
+ var(--bg);
+background-size:auto,auto,34px 34px,34px 34px,160px 160px,auto;
+min-height:100vh;
+}
+::selection{background:var(--gold);color:#221703}
+:focus-visible{outline:2px solid var(--gold2);outline-offset:2px;border-radius:6px}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
+.mono{font-family:var(--mono)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+/* scrollbars */
+*{scrollbar-width:thin;scrollbar-color:rgba(19,40,31,.22) transparent}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(19,40,31,.18);border-radius:99px;border:2.5px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(19,40,31,.34);border:2.5px solid transparent;background-clip:content-box}
+
+/* ============ LOADER ============ */
+#loader{position:fixed;inset:0;z-index:9999;background:radial-gradient(800px 400px at 50% 20%, rgba(239,165,28,.16), transparent 60%),radial-gradient(700px 500px at 85% 92%, rgba(19,88,69,.28), transparent 60%),linear-gradient(135deg,#0A2A21 0%,#0E3B2E 62%,#155844 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#F2F6EF;transition:opacity .6s ease,visibility .6s ease;}
+#loader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.loader-rings{position:relative;width:140px;height:140px;margin-bottom:30px}
+.loader-rings svg{width:100%;height:100%;animation:spinSlow 14s linear infinite}
+.loader-rings .pulse{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.loader-rings .pulse::before{content:"";width:26px;height:26px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 0 rgba(239,165,28,.6);animation:loaderPulse 1.8s infinite}
+@keyframes spinSlow{to{transform:rotate(360deg)}}
+@keyframes loaderPulse{0%{box-shadow:0 0 0 0 rgba(239,165,28,.6)}70%{box-shadow:0 0 0 22px rgba(239,165,28,0)}100%{box-shadow:0 0 0 0 rgba(239,165,28,0)}}
+.loader-brand{font-family:var(--disp);font-weight:800;font-size:32px;letter-spacing:-.03em;background:linear-gradient(120deg,#F4F9EF 25%,var(--gold-hi) 65%,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.loader-sub{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#BFD4C6;margin:6px 0 28px}
+.loader-status{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:#C9D8CC}
+.loader-status .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:loaderPulse 1.6s infinite}
+.loader-bar{width:220px;height:3px;background:rgba(245,248,241,.14);border-radius:99px;overflow:hidden;margin-top:18px}
+.loader-bar i{display:block;height:100%;width:30%;background:linear-gradient(90deg,var(--gold2),var(--gold));border-radius:99px;animation:loaderSlide 1.6s ease-in-out infinite}
+@keyframes loaderSlide{0%{transform:translateX(-100%)}50%{transform:translateX(200%)}100%{transform:translateX(400%)}}
+
+/* ============ TOPBAR (glass) ============ */
+.topbar{position:sticky;top:0;z-index:60;background:rgba(251,252,248,.9);backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);border-bottom:1px solid var(--line)}
+.topbar::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(239,165,28,.42) 22%,rgba(14,59,46,.14) 65%,transparent)}
+.topbar .wrap{display:flex;align-items:center;gap:16px;height:62px}
+.brand{font-family:var(--disp);font-weight:700;font-size:1.25rem;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.brand-mark{position:relative;display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:linear-gradient(160deg,#0d2b20,#070b0e);border:1px solid rgba(94,230,161,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.brand-mark svg{width:32px;height:32px;display:block;animation:spinSlow 16s linear infinite}
+.mark-pulse{position:absolute;top:50%;left:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:var(--gold);animation:markPulse 1.8s infinite}
+.brand b{font-family:var(--disp);font-weight:800;font-size:19px;letter-spacing:-.02em}
+.brand small{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--mut);text-transform:uppercase;display:block;margin-top:-3px}
+.tbRight{margin-left:auto;display:flex;align-items:center;gap:12px}
+.tbDate{font-family:var(--mono);font-size:12px;color:var(--mut);border:1px solid var(--line);padding:7px 12px;border-radius:999px;background:var(--paper);box-shadow:var(--sh)}
+.bellWrap{position:relative}
+.iconBtn{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--paper);display:inline-flex;align-items:center;justify-content:center;color:var(--pine);transition:all .2s var(--e-out)}
+.iconBtn:hover{background:var(--pine);color:#EAF2EC;transform:translateY(-1px);box-shadow:0 8px 18px -8px rgba(14,59,46,.55)}
+.iconBtn:active{transform:scale(.94)}
+.badge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:99px;background:var(--gold);color:#221703;font:600 10.5px var(--mono);display:flex;align-items:center;justify-content:center;border:2px solid var(--paper);box-shadow:0 4px 10px -3px rgba(239,165,28,.6)}
+.badge.shake{animation:shake .5s}
+@keyframes shake{0%,100%{transform:rotate(0)}20%{transform:rotate(12deg)}40%{transform:rotate(-10deg)}60%{transform:rotate(8deg)}80%{transform:rotate(-6deg)}}
+.bellDD{position:absolute;right:0;top:48px;width:360px;background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh2);overflow:hidden;display:none;z-index:70}
+.bellDD.open{display:block;animation:pop .22s cubic-bezier(.2,.9,.3,1.2)}
+.bellDD h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);padding:14px 16px 8px}
+.bellItem{display:flex;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid var(--line2);font-size:13px;transition:background .15s}
+.bellItem:hover{background:#F4F7EF}
+.bellItem .dot{width:9px;height:9px;border-radius:99px;background:var(--gold);flex:none;animation:pulse 1.6s infinite}
+.bellItem .txt{flex:1;line-height:1.35}
+.bellItem .txt small{display:block;color:var(--mut);font-size:11.5px}
+.bellAct{padding:6px 16px 14px;border-top:1px solid var(--line2);font-size:12px;color:var(--mut)}
+.bellAct li{list-style:none;padding:4px 0;display:flex;gap:8px}
+.bellAct li::before{content:"—";color:var(--gold2)}
+.tbAva{width:38px;height:38px;border-radius:12px;background:linear-gradient(160deg,var(--pine3),var(--pine2));color:#F4E9CE;font:700 14px var(--disp);display:flex;align-items:center;justify-content:center;border:none;transition:all .2s var(--e-out);overflow:hidden}
+.tbAva img{width:100%;height:100%;object-fit:cover}
+.tbAva:hover{transform:translateY(-1px) scale(1.03);box-shadow:0 8px 20px -8px rgba(14,59,46,.55)}
+
+/* ============ BUTTONS ============ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font:600 14px var(--body);padding:11px 18px;border-radius:11px;border:1px solid transparent;transition:all .2s var(--e-out);letter-spacing:.01em;text-decoration:none;white-space:nowrap}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn svg{flex:none}
+.btn-pine{background:linear-gradient(180deg,var(--pine3),var(--pine) 70%);color:#F3F7EF;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 6px 16px -8px rgba(14,59,46,.5)}
+.btn-pine:hover{transform:translateY(-1px);background:linear-gradient(180deg,#176249,var(--pine3));box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 12px 24px -10px rgba(14,59,46,.6)}
+.btn-gold{background:linear-gradient(180deg,var(--gold-hi),var(--gold) 55%,var(--gold2));color:#221703;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 6px 16px -8px rgba(239,165,28,.65)}
+.btn-gold:hover{transform:translateY(-1px);filter:brightness(1.04);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 12px 26px -10px rgba(239,165,28,.75)}
+.btn-ghost{background:transparent;border-color:rgba(19,40,31,.28);color:var(--ink)}
+.btn-ghost:hover{background:rgba(14,59,46,.07);border-color:var(--pine);transform:translateY(-1px)}
+.btn-light{background:#F5F8F1;color:var(--pine2)}
+.btn-light:hover{background:#fff;box-shadow:var(--sh2);transform:translateY(-1px)}
+.btn-outlineLight{background:transparent;border-color:rgba(245,248,241,.45);color:#F5F8F1}
+.btn-outlineLight:hover{background:rgba(245,248,241,.12);border-color:#F5F8F1}
+.btn-danger{background:transparent;border-color:rgba(191,66,41,.4);color:var(--red)}
+.btn-danger:hover{background:var(--red-bg);border-color:var(--red)}
+.btn-sm{padding:8px 13px;font-size:13px;border-radius:9px}
+.btn-block{width:100%}
+
+/* ============ MASTHEAD ============ */
+.masthead{position:relative;overflow:hidden;background:radial-gradient(900px 420px at 88% -80px,rgba(239,165,28,.22),transparent 58%),linear-gradient(135deg,var(--pine2) 0%,var(--pine) 62%,#155844 100%);color:#F2F6EF;border-radius:0 0 30px 30px;margin-bottom:26px;box-shadow:var(--sh3)}
+.mastRings{position:absolute;right:-90px;top:-110px;width:460px;height:460px;opacity:.55;animation:spinSlow 90s linear infinite;pointer-events:none;filter:drop-shadow(0 0 24px rgba(239,165,28,.12))}
+.mastGrid{position:relative;display:grid;grid-template-columns:1fr auto;gap:32px;padding:44px 0 40px}
+.mastId{display:flex;gap:22px;align-items:flex-start}
+.avaWrap{position:relative}
+.ava{width:96px;height:96px;border-radius:28px;background:radial-gradient(circle at 30% 25%,#F7C766,var(--gold) 55%,var(--gold2));color:#3A2503;display:flex;align-items:center;justify-content:center;font:800 40px var(--disp);letter-spacing:-.03em;box-shadow:0 0 0 3px rgba(245,248,241,.22),0 0 0 6px rgba(239,165,28,.2),0 14px 34px -12px rgba(0,0,0,.55);overflow:hidden}
+.ava img{width:100%;height:100%;object-fit:cover}
+.ava.sm{width:40px;height:40px;border-radius:12px;font-size:15px;background:var(--pine);color:#F4E9CE;box-shadow:none}
+.ava.xl{width:72px;height:72px;border-radius:20px;font-size:28px}
+.avaEdit{position:absolute;bottom:-6px;right:-6px;width:30px;height:30px;border-radius:9px;background:linear-gradient(180deg,var(--gold-hi),var(--gold));border:2px solid var(--pine);color:#3A2503;display:flex;align-items:center;justify-content:center;transition:all .18s var(--e-spring);box-shadow:0 4px 12px -4px rgba(0,0,0,.4)}
+.avaEdit:hover{transform:scale(1.12) rotate(8deg)}
+.mastName h1{font-family:var(--disp);font-weight:800;font-size:clamp(2.4rem,5vw,3.9rem);line-height:.98;letter-spacing:-.03em}
+.handleRow{display:flex;align-items:center;gap:10px;margin:10px 0 12px;flex-wrap:wrap}
+.handle{font-family:var(--mono);font-size:13px;color:#F7C766;background:rgba(239,165,28,.14);border:1px solid rgba(239,165,28,.4);padding:4px 11px;border-radius:999px;box-shadow:0 0 16px -4px rgba(239,165,28,.35)}
+.specTag{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#BFD4C6;border:1px solid rgba(245,248,241,.25);padding:4px 10px;border-radius:999px}
+.mastBio{max-width:56ch;color:#C9D8CC;font-size:15px}
+.mastLinks{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.linkChip{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;color:#E4EDE2;background:rgba(245,248,241,.08);border:1px solid rgba(245,248,241,.2);padding:7px 12px;border-radius:9px;transition:all .18s var(--e-out);text-decoration:none}
+.linkChip:hover{background:rgba(245,248,241,.16);transform:translateY(-1px);box-shadow:0 8px 18px -10px rgba(0,0,0,.4)}
+.linkChip.copyable{cursor:pointer}
+.mastActions{display:flex;gap:10px;flex-wrap:wrap;align-self:flex-start}
+.mastStats{display:flex;gap:0;align-self:center;border:1px solid rgba(245,248,241,.2);border-radius:16px;overflow:hidden;background:rgba(10,42,33,.5);backdrop-filter:blur(8px);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 16px 36px -16px rgba(0,0,0,.45)}
+.mastStat{padding:16px 22px;text-align:left;transition:background .2s}
+.mastStat:hover{background:rgba(245,248,241,.06)}
+.mastStat + .mastStat{border-left:1px solid rgba(245,248,241,.18)}
+.mastStat b{display:block;font:600 26px var(--mono);color:#F7C766;text-shadow:0 0 22px rgba(239,165,28,.4)}
+.mastStat span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9FB8A9}
+
+/* ============ SECTIONS ============ */
+section{margin-bottom:40px}
+.secHead{display:flex;align-items:baseline;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.secIdx{font:600 12px var(--mono);color:var(--gold2);letter-spacing:.12em}
+.secHead h2{font-family:var(--disp);font-weight:800;font-size:clamp(1.4rem,2.6vw,1.9rem);letter-spacing:-.02em}
+.secCount{font-family:var(--mono);font-size:12px;color:var(--mut);background:var(--paper);border:1px solid var(--line);padding:3px 10px;border-radius:999px}
+.secHead .spacer{flex:1}
+
+/* overview strip */
+.board{display:grid;grid-template-columns:repeat(4,1fr);background:var(--paper);border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh);overflow:hidden}
+.cell{padding:20px 24px;position:relative;transition:background .2s var(--e-out)}
+.cell::after{content:"";position:absolute;top:0;left:20px;right:60%;height:2px;border-radius:99px;background:linear-gradient(90deg,var(--gold),transparent);opacity:0;transition:opacity .22s}
+.cell:hover::after{opacity:1}
+.cell + .cell{border-left:1px solid var(--line2)}
+.cell:hover{background:#F4F7EF}
+.cell .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:7px}
+.cell .num{font:600 clamp(1.9rem,3.4vw,2.6rem) var(--mono);letter-spacing:-.03em;margin:6px 0 2px;color:var(--pine)}
+.cell .sub{font-size:12px;color:var(--mut)}
+.cell.alert{background:var(--amber-bg);cursor:pointer}
+.cell.alert:hover{background:#F8E9C6}
+.cell.alert .num{color:var(--gold-ink)}
+.pulseDot{width:8px;height:8px;border-radius:99px;background:var(--gold);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(239,165,28,.55)}70%{box-shadow:0 0 0 8px rgba(239,165,28,0)}100%{box-shadow:0 0 0 0 rgba(239,165,28,0)}}
+
+/* pending panel */
+.pendingPanel{margin-top:14px;background:var(--amber-bg);border:1px solid rgba(217,142,15,.35);border-radius:16px;overflow:hidden;box-shadow:0 12px 28px -16px rgba(217,142,15,.45)}
+.pendingPanel header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px dashed rgba(217,142,15,.4)}
+.pendingPanel header h3{font-family:var(--disp);font-size:15px;font-weight:700;color:var(--gold-ink)}
+.pendingPanel header .mono{margin-left:auto;font-size:11px;color:var(--gold-ink);letter-spacing:.1em;text-transform:uppercase}
+.pendRow{display:flex;align-items:center;gap:14px;padding:13px 18px;background:rgba(251,252,248,.65);transition:background .15s}
+.pendRow:hover{background:rgba(251,252,248,.95)}
+.pendRow + .pendRow{border-top:1px solid rgba(217,142,15,.2)}
+.pendRow .psn{font:600 13px var(--mono);color:var(--gold-ink);background:#fff;border:1px solid rgba(217,142,15,.4);border-radius:8px;padding:6px 9px}
+.pendRow .who{flex:1;font-size:13.5px}
+.pendRow .who small{display:block;color:var(--mut);font-size:12px}
+
+/* services */
+.svcGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.svcCard{background:linear-gradient(180deg,#FFFFFF,var(--paper));border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--sh);transition:all .24s var(--e-out);position:relative;overflow:hidden}
+.svcCard::after{content:"";position:absolute;top:0;left:16px;right:60%;height:3px;border-radius:99px;background:linear-gradient(90deg,var(--gold),transparent);opacity:0;transition:opacity .24s}
+.svcCard:hover{transform:translateY(-4px);box-shadow:var(--sh2);border-color:rgba(14,59,46,.3)}
+.svcCard:hover::after{opacity:1}
+.svcTop{display:flex;align-items:flex-start;gap:10px}
+.svcTop h3{font-family:var(--disp);font-size:17px;font-weight:700;letter-spacing:-.01em;flex:1}
+.svcMenuWrap{position:relative}
+.svcMenu{position:absolute;right:0;top:40px;background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh2);min-width:170px;z-index:20;display:none;overflow:hidden}
+.svcMenu.open{display:block;animation:pop .18s cubic-bezier(.2,.9,.3,1.2)}
+.svcMenu button{display:flex;width:100%;gap:9px;align-items:center;background:none;border:none;padding:10px 14px;font-size:13.5px;color:var(--ink);text-align:left;transition:.15s}
+.svcMenu button:hover{background:rgba(14,59,46,.07)}
+.svcMenu button.danger{color:var(--red)}
+.svcMenu button.danger:hover{background:var(--red-bg)}
+.svcDesc{font-size:13.5px;color:var(--mut);flex:1}
+.svcFoot{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px dashed var(--line);padding-top:13px}
+.svcRate{font:600 19px var(--mono);letter-spacing:-.02em}
+.svcRate em{font:500 11px var(--mono);font-style:normal;color:var(--mut);margin-left:4px}
+.vis{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:999px;display:inline-flex;gap:6px;align-items:center}
+.vis.public{background:var(--ok-bg);color:var(--ok);box-shadow:inset 0 0 0 1px rgba(31,138,91,.22)}
+.vis.private{background:var(--amber-bg);color:var(--gold-ink);box-shadow:inset 0 0 0 1px rgba(217,142,15,.25)}
+.svcCard.archived{opacity:.75;border-style:dashed}
+.archToggle{font:500 12.5px var(--mono);color:var(--mut);background:none;border:none;text-decoration:underline;text-underline-offset:3px;margin-top:14px;transition:color .15s}
+.archToggle:hover{color:var(--pine)}
+
+/* clients */
+.cliToolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.searchBox{display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:9px 13px;min-width:230px;transition:all .18s var(--e-out);box-shadow:var(--sh)}
+.searchBox:focus-within{border-color:var(--pine);box-shadow:0 0 0 3px rgba(14,59,46,.1),var(--sh2)}
+.searchBox input{border:none;outline:none;background:none;width:100%}
+.fChip{font:600 12px var(--mono);letter-spacing:.04em;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--mut);transition:all .16s var(--e-out)}
+.fChip:hover{border-color:var(--pine);color:var(--pine);transform:translateY(-1px)}
+.fChip.on{background:linear-gradient(180deg,var(--pine3),var(--pine));border-color:var(--pine);color:#F3F7EF;box-shadow:0 8px 18px -8px rgba(14,59,46,.5)}
+.cliGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+.cliCard{background:linear-gradient(180deg,#FFFFFF,var(--paper));border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px 22px;box-shadow:var(--sh);transition:all .24s var(--e-out);position:relative;overflow:hidden;display:flex;flex-direction:column;gap:12px}
+.cliCard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--slate);transition:filter .2s}
+.cliCard.st-active::before{background:var(--ok)}
+.cliCard.st-paused::before{background:var(--gold)}
+.cliCard.st-draft::before{background:var(--slate)}
+.cliCard.st-completed::before{background:var(--teal)}
+.cliCard.st-expired::before{background:var(--brown)}
+.cliCard.st-cancelled::before{background:var(--red)}
+.cliCard:hover{transform:translateY(-4px);box-shadow:var(--sh2)}
+.cliCard:hover::before{filter:saturate(1.25) brightness(1.08)}
+.cliHead{display:flex;align-items:center;gap:12px}
+.cliWho{flex:1;min-width:0}
+.cliWho h3{font-family:var(--disp);font-size:16.5px;font-weight:700;letter-spacing:-.01em}
+.cliWho p{font-size:12.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{font:600 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:999px;flex:none}
+.chip.st-active{background:var(--ok-bg);color:var(--ok);box-shadow:inset 0 0 0 1px rgba(31,138,91,.22)}
+.chip.st-paused{background:var(--amber-bg);color:var(--gold-ink);box-shadow:inset 0 0 0 1px rgba(217,142,15,.25)}
+.chip.st-draft{background:var(--slate-bg);color:var(--slate);box-shadow:inset 0 0 0 1px rgba(91,107,98,.2)}
+.chip.st-completed{background:var(--teal-bg);color:var(--teal);box-shadow:inset 0 0 0 1px rgba(15,118,110,.2)}
+.chip.st-expired{background:var(--brown-bg);color:var(--brown);box-shadow:inset 0 0 0 1px rgba(154,91,51,.22)}
+.chip.st-cancelled{background:var(--red-bg);color:var(--red);box-shadow:inset 0 0 0 1px rgba(191,66,41,.22)}
+.segmeter{display:flex;gap:3px}
+.seg{flex:1;height:9px;border-radius:3px;background:rgba(19,40,31,.12);transition:.3s}
+.seg.done{background:linear-gradient(90deg,var(--pine),var(--pine3))}
+.seg.pend{background:var(--gold);animation:pulse 1.6s infinite}
+.cliCard:hover .seg.done{background:var(--pine3)}
+.bar{height:9px;border-radius:99px;background:rgba(19,40,31,.12);overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pine),var(--pine3));border-radius:99px;transition:width .8s cubic-bezier(.2,.7,.2,1)}
+.cliNums{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-top:7px}
+.cliNums b{font:600 13.5px var(--mono);color:var(--ink)}
+.cliNums .pct{font:600 13.5px var(--mono);color:var(--pine)}
+.pendMini{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--gold-ink);background:var(--amber-bg);border-radius:9px;padding:7px 10px;box-shadow:inset 0 0 0 1px rgba(217,142,15,.2)}
+.nextMini{font-size:12px;color:var(--mut);font-family:var(--mono)}
+.cliActions{display:flex;gap:9px;align-items:center}
+.cliActions .btn{flex:1}
+.cliActions .btn-view{flex:0 0 auto}
+
+/* ============ DETAIL PAGE ============ */
+.backLink{display:inline-flex;align-items:center;gap:8px;background:none;border:none;font:600 13.5px var(--body);color:var(--mut);margin:6px 0 18px;transition:all .16s var(--e-out)}
+.backLink:hover{color:var(--pine);transform:translateX(-3px)}
+.dHead{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:18px}
+.dHead h1{font-family:var(--disp);font-weight:800;font-size:clamp(1.9rem,4vw,2.9rem);letter-spacing:-.03em;line-height:1}
+.dHead .dSub{color:var(--mut);font-size:14px;margin-top:4px}
+.dHeadRight{margin-left:auto;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.clientBanner{display:none;background:linear-gradient(120deg,var(--pine2),var(--pine3));color:#F2F6EF;border-radius:13px;padding:13px 18px;font-size:13.5px;margin-bottom:18px;gap:10px;align-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 24px -12px rgba(14,59,46,.5)}
+.detail.as-client .clientBanner{display:flex}
+.detail.as-client .staff-only{display:none!important}
+.dActionBar{display:flex;gap:12px;align-items:center;background:linear-gradient(180deg,#FFFFFF,var(--paper));border:1px solid var(--line);border-radius:16px;padding:15px 18px;margin-bottom:22px;box-shadow:var(--sh);flex-wrap:wrap}
+.dActionBar .hint{font-size:12.5px;color:var(--mut);margin-left:auto}
+.dGrid{display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start}
+.panel{background:linear-gradient(180deg,#FFFFFF,var(--paper));border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh);padding:22px;margin-bottom:16px}
+.panelTitle{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.ringWrap{position:relative;width:210px;height:210px;margin:4px auto 8px}
+.ringWrap svg{width:100%;height:100%;filter:drop-shadow(0 10px 22px rgba(14,59,46,.18))}
+.arcDone,.arcPend{transition:stroke-dashoffset 1.1s cubic-bezier(.2,.7,.2,1)}
+.ringCenter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.ringCenter .pc{font:600 40px var(--mono);letter-spacing:-.05em;line-height:1;background:linear-gradient(120deg,var(--pine),var(--pine3));-webkit-background-clip:text;background-clip:text;color:transparent}
+.ringCenter .of{font:500 12.5px var(--mono);color:var(--mut);margin-top:6px}
+.ringCenter .rem{font-size:11.5px;color:var(--gold-ink);background:var(--amber-bg);border-radius:99px;padding:3px 10px;margin-top:8px}
+.ringLegend{display:flex;justify-content:center;gap:16px;font-size:12px;color:var(--mut);margin-top:6px}
+.ringLegend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.factRow{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed var(--line2);font-size:13.5px}
+.factRow:last-child{border:none}
+.factRow span{color:var(--mut)}
+.factRow b{font-weight:600;text-align:right}
+.statusTools{display:flex;gap:8px;flex-wrap:wrap}
+.payRow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line2);font-size:13px}
+.payRow:last-child{border:none}
+.payRow .amt{font:600 13.5px var(--mono);margin-left:auto}
+.payChip{font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:99px}
+.payChip.Paid{background:var(--ok-bg);color:var(--ok);box-shadow:inset 0 0 0 1px rgba(31,138,91,.25)}
+.payChip.Pending{background:var(--amber-bg);color:var(--gold-ink);box-shadow:inset 0 0 0 1px rgba(217,142,15,.28)}
+.payChip.Partial{background:var(--amber-bg);color:var(--gold-ink);box-shadow:inset 0 0 0 1px rgba(217,142,15,.28)}
+.payChip.Unpaid{background:var(--red-bg);color:var(--red);box-shadow:inset 0 0 0 1px rgba(191,66,41,.25)}
+
+/* accordion */
+.acc{border:1px solid var(--line2);border-radius:13px;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.acc + .acc{margin-top:9px}
+.acc:hover{border-color:rgba(14,59,46,.3)}
+.acc.open{border-color:rgba(14,59,46,.32);box-shadow:var(--sh)}
+.accHead{display:flex;align-items:center;gap:12px;width:100%;background:#F7F9F3;border:none;padding:13px 15px;text-align:left;transition:background .16s}
+.accHead:hover{background:#EFF4EA}
+.accIcon{width:26px;height:26px;border-radius:99px;display:flex;align-items:center;justify-content:center;flex:none;font-size:12px}
+.accIcon.done{background:linear-gradient(180deg,var(--pine3),var(--pine));color:#EAF2EC}
+.accIcon.pend{background:linear-gradient(180deg,var(--gold-hi),var(--gold));color:#3A2503;animation:pulse 1.6s infinite}
+.accT{flex:1}
+.accT b{font-family:var(--disp);font-size:14px;display:block}
+.accT small{color:var(--mut);font-size:12px}
+.accBy{font:500 11px var(--mono);color:var(--mut)}
+.accChev{transition:.3s var(--e-out);color:var(--mut)}
+.acc.open .accChev{transform:rotate(180deg)}
+.accBody{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s cubic-bezier(.2,.7,.2,1)}
+.acc.open .accBody{grid-template-rows:1fr}
+.accInner{overflow:hidden}
+.tline{padding:6px 15px 16px 17px}
+.tStep{display:flex;gap:12px;font-size:13px;padding:5px 0;position:relative}
+.tStep::before{content:"";width:8px;height:8px;border-radius:99px;background:var(--pine);margin-top:6px;flex:none;box-shadow:0 0 8px -2px rgba(14,59,46,.5)}
+.tStep.gold::before{background:var(--gold);box-shadow:0 0 10px -1px rgba(239,165,28,.6)}
+.tStep.empty::before{background:transparent;border:2px dashed rgba(19,40,31,.3);width:6px;height:6px;box-shadow:none}
+.tStep .mono{margin-left:auto;color:var(--mut);font-size:12px}
+.sessNote{margin:8px 4px 2px;font-size:12.5px;background:#F2F5EE;border-left:3px solid var(--gold);padding:8px 10px;border-radius:0 9px 9px 0;color:var(--mut)}
+
+/* notes & forms */
+.noteItem{padding:11px 0;border-bottom:1px dashed var(--line2);font-size:13.5px}
+.noteItem:last-child{border:none}
+.noteItem small{display:block;font:500 11px var(--mono);color:var(--mut);margin-top:4px}
+.noteForm{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+.empty{color:var(--mut);font-size:13px;font-style:italic}
+
+/* ============ MODAL ============ */
+.overlay{position:fixed;inset:0;background:rgba(8,26,20,.6);backdrop-filter:blur(4px);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:6vh 18px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:var(--paper);border-radius:20px;box-shadow:var(--sh3);width:100%;max-width:520px;animation:pop .28s cubic-bezier(.2,.9,.3,1.15);overflow:hidden}
+.modal::before{content:"";display:block;height:4px;background:linear-gradient(90deg,var(--gold),var(--gold2) 45%,rgba(239,165,28,0))}
+.modal.wide{max-width:660px}
+.modal header{display:flex;align-items:center;gap:12px;padding:20px 24px 0}
+.modal header h3{font-family:var(--disp);font-weight:800;font-size:20px;letter-spacing:-.02em;flex:1}
+.modal .mSub{padding:4px 24px 0;font-size:13px;color:var(--mut)}
+.modal .mBody{padding:18px 24px;display:flex;flex-direction:column;gap:14px}
+.modal footer{display:flex;gap:10px;justify-content:flex-end;padding:6px 24px 22px}
+.modal label{display:flex;flex-direction:column;gap:6px;font:600 12px var(--body);color:var(--mut);letter-spacing:.02em}
+.modal input[type=text],.modal input[type=number],.modal input[type=date],.modal input[type=time],.modal select,.modal textarea{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;outline:none;transition:all .16s var(--e-out);width:100%}
+.modal textarea{border-radius:12px}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--pine);box-shadow:0 0 0 3px rgba(14,59,46,.12)}
+.fRow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.money{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden;transition:all .16s var(--e-out)}
+.money:focus-within{border-color:var(--pine);box-shadow:0 0 0 3px rgba(14,59,46,.12)}
+.money span{padding:0 4px 0 12px;color:var(--mut);font:600 14px var(--mono)}
+.money input{border:none!important;box-shadow:none!important}
+.visPick{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.visPick legend{font:600 12px var(--body);color:var(--mut);padding:0 6px}
+.pick{border:1px solid var(--line);border-radius:10px;padding:11px 12px;cursor:pointer;transition:all .16s var(--e-out);display:flex;flex-direction:column;gap:2px}
+.pick:hover{border-color:var(--pine);transform:translateY(-1px)}
+.pick.on{border-color:var(--pine);background:rgba(14,59,46,.06);box-shadow:0 0 0 1px var(--pine)}
+.pick input{display:none}
+.pick b{font-size:13.5px}
+.pick small{font-weight:400;font-size:11.5px;color:var(--mut)}
+
+/* wizard */
+.wzSteps{display:flex;gap:6px;padding:16px 24px 0}
+.wzStep{flex:1;text-align:center;position:relative;padding-top:18px;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.wzStep::before{content:"";position:absolute;top:5px;left:0;right:0;height:3px;border-radius:99px;background:var(--line2);transition:background .2s}
+.wzStep.on{color:var(--pine)}
+.wzStep.on::before{background:var(--gold);box-shadow:0 0 8px rgba(239,165,28,.55)}
+.wzStep.doneStep::before{background:var(--pine)}
+.pickRow{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .16s var(--e-out);background:#fff}
+.pickRow:hover{border-color:var(--pine);transform:translateX(2px)}
+.pickRow.on{border-color:var(--pine);background:rgba(14,59,46,.06);box-shadow:0 0 0 1px var(--pine)}
+.pickRow input{display:none}
+.pickRow .prTxt{flex:1}
+.pickRow .prTxt b{font-size:14px;display:block}
+.pickRow .prTxt small{color:var(--mut);font-size:12px}
+.pickRow .prRate{font:600 13px var(--mono);color:var(--pine)}
+.dayChips{display:flex;gap:6px;flex-wrap:wrap}
+.dayChip{width:40px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;font:600 11px var(--mono);color:var(--mut);transition:all .15s var(--e-out)}
+.dayChip:hover{border-color:var(--pine)}
+.dayChip.on{background:linear-gradient(180deg,var(--pine3),var(--pine));border-color:var(--pine);color:#F3F7EF;box-shadow:0 6px 14px -6px rgba(14,59,46,.5)}
+.switchRow{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:11px;padding:11px 14px;background:#fff}
+.switch{position:relative;width:42px;height:24px;flex:none}
+.switch input{display:none}
+.switch i{position:absolute;inset:0;background:rgba(19,40,31,.2);border-radius:99px;transition:.2s;cursor:pointer}
+.switch i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:99px;background:#fff;transition:all .25s var(--e-spring);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch input:checked + i{background:var(--ok)}
+.switch input:checked + i::after{left:21px}
+.sumRow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line2);font-size:13.5px}
+.sumRow span{color:var(--mut)}
+.sumRow b{font-weight:600}
+
+/* link box & confirm */
+.linkBox{display:flex;gap:8px;align-items:stretch}
+.linkBox .lk{flex:1;font:500 13px var(--mono);background:#F2F5EE;border:1px dashed rgba(14,59,46,.35);border-radius:10px;padding:11px 13px;color:var(--pine);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cfCard{background:#F2F5EE;border-radius:12px;padding:14px 16px}
+.notifyPreview{background:linear-gradient(140deg,var(--pine2),var(--pine3));color:#EAF2EC;border-radius:12px;padding:13px 15px;font-size:13px;position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 12px 26px -14px rgba(14,59,46,.5)}
+.notifyPreview::before{content:"→ notification to client";display:block;font:600 9.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#F7C766;margin-bottom:6px}
+
+/* ============ TOASTS (glass) ============ */
+#toasts{position:fixed;bottom:22px;right:22px;z-index:200;display:flex;flex-direction:column;gap:10px;max-width:400px}
+.toast{background:rgba(10,42,33,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#F2F6EF;border-radius:14px;padding:13px 16px;font-size:13.5px;box-shadow:var(--sh2),inset 0 1px 0 rgba(255,255,255,.07);display:flex;gap:11px;align-items:flex-start;animation:toastIn .35s cubic-bezier(.2,.9,.3,1.2);border-left:4px solid var(--gold)}
+.toast.ok{border-left-color:#3FBF82}
+.toast.warn{border-left-color:var(--gold)}
+.toast .tIco{flex:none;margin-top:1px}
+@keyframes toastIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+.toast.out{opacity:0;transform:translateX(20px);transition:.3s}
+
+/* ============ REVEAL / FOOTER ============ */
+.reveal{opacity:0;transform:translateY(16px)}
+.reveal.in{opacity:1;transform:none;transition:opacity .65s cubic-bezier(.2,.7,.2,1),transform .65s cubic-bezier(.2,.7,.2,1)}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:none}}
+footer.pageFoot{padding:30px 0 44px;text-align:center;color:var(--mut);font-size:12.5px}
+footer.pageFoot button{background:none;border:none;color:var(--mut);text-decoration:underline;text-underline-offset:3px;font-size:12.5px;transition:color .15s}
+footer.pageFoot button:hover{color:var(--red)}
+
+@media(max-width:960px){
+.mastGrid{grid-template-columns:1fr}
+.mastStats{align-self:flex-start}
+.dGrid{grid-template-columns:1fr}
+.board{grid-template-columns:repeat(2,1fr)}
+.cell:nth-child(3){border-left:none}
+.cell:nth-child(n+3){border-top:1px solid var(--line2)}
+}
+@media(max-width:640px){
+.board{grid-template-columns:1fr 1fr}
+.mastId{flex-direction:column}
+.fRow{grid-template-columns:1fr}
+.tbDate{display:none}
+.cliGrid{grid-template-columns:1fr}
+.modal footer{flex-wrap:wrap}
+}
+@media(prefers-reduced-motion:reduce){
+*,*::before,*::after{animation-duration:.001s!important;transition-duration:.001s!important}
+}
+</style>
+</head>
+<body>
+<!-- ================= BOOT OVERLAY ================= -->
+<div id="loader">
+<div class="loader-rings">
+<svg viewBox="0 0 140 140" fill="none">
+<circle cx="70" cy="70" r="62" stroke="rgba(245,248,241,.14)" stroke-width="1.5" stroke-dasharray="4 10"/>
+<circle cx="70" cy="70" r="50" stroke="rgba(245,248,241,.18)" stroke-width="1.5"/>
+<circle cx="70" cy="70" r="38" stroke="rgba(239,165,28,.5)" stroke-width="2.5" stroke-dasharray="30 200" stroke-linecap="round"/>
+<circle cx="70" cy="70" r="26" stroke="rgba(245,248,241,.12)" stroke-width="1.5" stroke-dasharray="2 6"/>
+</svg>
+<div class="pulse"></div>
+</div>
+<div class="loader-brand">Straka</div>
+<div class="loader-sub">Instructor Console</div>
+<div class="loader-status"><span class="dot"></span><span id="bootMsg">Starting…</span></div>
+<div class="loader-bar"><i></i></div>
+</div>
+
+<!-- ================= TOPBAR ================= -->
+<div class="topbar">
+<div class="wrap">
+<a class="brand" href="#top"><span class="brand-mark"><svg viewBox="0 0 140 140" fill="none" aria-hidden="true"><circle cx="70" cy="70" r="62" stroke="rgba(255,255,255,.16)" stroke-width="3" stroke-dasharray="4 10"/><circle cx="70" cy="70" r="50" stroke="rgba(255,255,255,.22)" stroke-width="3"/><circle cx="70" cy="70" r="38" stroke="rgba(239,165,28,.85)" stroke-width="5" stroke-dasharray="30 200" stroke-linecap="round"/><circle cx="70" cy="70" r="26" stroke="rgba(255,255,255,.14)" stroke-width="3" stroke-dasharray="2 6"/></svg><i class="mark-pulse"></i></span>
+<span><b>Straka</b><small>Instructor Console</small></span>
+</a>
+<div class="tbRight">
+<span class="tbDate" id="tbDate"></span>
+<div class="bellWrap">
+<button class="iconBtn" data-act="bell" id="bellBtn" title="Pending actions">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+<span class="badge" id="bellBadge" hidden>0</span>
+</button>
+<div class="bellDD" id="bellDD"></div>
+</div>
+<button class="tbAva" id="tbAva" onclick="document.getElementById('masthead').scrollIntoView({behavior:'smooth'})" title="Your profile">R</button>
+</div>
+</div>
+</div>
+
+<main class="wrap" id="app">
+<!-- ============ DASHBOARD ============ -->
+<div id="view-dash">
+<section class="masthead reveal" id="masthead">
+<svg class="mastRings" viewBox="0 0 460 460" fill="none">
+<circle cx="230" cy="230" r="220" stroke="rgba(245,248,241,.14)" stroke-width="1.5" stroke-dasharray="4 10"/>
+<circle cx="230" cy="230" r="175" stroke="rgba(245,248,241,.12)" stroke-width="1.5"/>
+<circle cx="230" cy="230" r="130" stroke="rgba(239,165,28,.35)" stroke-width="2" stroke-dasharray="60 758" stroke-linecap="round"/>
+<circle cx="230" cy="230" r="90" stroke="rgba(245,248,241,.1)" stroke-width="1.5" stroke-dasharray="2 8"/>
+<circle cx="230" cy="230" r="48" stroke="rgba(239,165,28,.25)" stroke-width="2"/>
+</svg>
+<div class="wrap"><div class="mastGrid" id="mastContent"></div></div>
+</section>
+
+<section class="reveal" id="overview">
+<div class="secHead">
+<span class="secIdx">01 /</span><h2>Today's Board</h2>
+<span class="secCount" id="boardDate"></span>
+</div>
+<div class="board" id="boardCells"></div>
+<div id="pendingWrap"></div>
+</section>
+
+<section class="reveal" id="services">
+<div class="secHead">
+<span class="secIdx">02 /</span><h2>Services</h2>
+<span class="secCount" id="svcCount"></span>
+<span class="spacer"></span>
+<button class="btn btn-pine btn-sm" data-act="addService"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Service</button>
+</div>
+<div class="svcGrid" id="svcGrid"></div>
+<div id="svcArchWrap"></div>
+</section>
+
+<section class="reveal" id="clients">
+<div class="secHead">
+<span class="secIdx">03 /</span><h2>Clients &amp; Subscriptions</h2>
+<span class="secCount" id="cliCount"></span>
+</div>
+<button class="btn btn-gold btn-block" data-act="assign" style="margin-bottom:18px;padding:15px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+Assign Client a Service
+</button>
+<div class="cliToolbar">
+<div class="searchBox">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5C6E63" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+<input id="cliSearch" placeholder="Search clients or services…" oninput="renderClients()">
+</div>
+<div id="fChips"></div>
+</div>
+<div class="cliGrid" id="cliGrid"></div>
+</section>
+
+<footer class="pageFoot">
+Straka · INSTRUCTOR ⇄ CLIENT · ONE TRACKED RELATIONSHIP<br>
+<button onclick="handleSignOut()">Sign Out</button>
+</footer>
+</div>
+
+<!-- ============ DETAIL ============ -->
+<div id="view-detail" hidden></div>
+</main>
+
+<div class="overlay" id="overlay"><div class="modal" id="modalBox"></div></div>
+<div id="toasts"></div>
+
+<script>
+/* =============================================================
+  Straka — Instructor Console (Fully Merged Production Version)
+============================================================= */
+const DAY = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s??'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const pad = n => String(n).padStart(2,'0');
+const iso = d => { const x = new Date(d); return x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate()); };
+const todayISO = () => iso(new Date());
+const addDays = (dISO, n) => { const d = new Date(dISO+'T12:00:00'); d.setDate(d.getDate()+n); return iso(d); };
+const fmtDate = i => { if(!i) return '—'; const d = new Date(i+'T12:00:00'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); };
+const fmtShort = i => { if(!i) return '—'; const d = new Date(i+'T12:00:00'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); };
+const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '—';
+const money = n => n == null ? 'Custom' : '₦'+Number(n).toLocaleString('en-NG');
+const initials = n => n ? n.split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase() : 'CO';
+const firstName = n => n ? n.split(' ')[0] : 'Coach';
+const nowMin = () => { const d = new Date(); return d.getHours()*60 + d.getMinutes(); };
+
+/* ---------------- Application State ---------------- */
+let currentUser = null;
+let profile = null;
+let instructorProfile = null;
+let S = { instructor: {}, services: [], clients: [], subs: [], sessions: [], activity: [] };
+let view = { page: 'dash', subId: null, clientView: false };
+let ui = { filter: 'all', showArch: false, pendOpen: null, firstPaint: true, endTouched: false };
+let realtimeChannel = null;
+let WA = {}; // Wizard State
+
+/* ---------------- SVG Icons ---------------- */
+const icoEye = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const icoDots = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>';
+const icoCheck = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const icoChev = '<svg class="accChev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>';
+const icoLink = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>';
+const icoBack = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
+const icoLock = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+const icoPencil = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
+
+/* ---------------- 1. AUTH & INITIALIZATION ---------------- */
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const l = document.getElementById('loader');
+    if (l && !l.classList.contains('hidden')) {
+      l.classList.add('hidden');
+      setTimeout(() => { try { l.remove(); } catch(e){} }, 700);
+    }
+  }, 5000);
+  initConsole();
+});
+
+async function initConsole() {
+  try {
+    if (typeof supabaseClient === 'undefined') {
+      toast('Supabase configuration missing', 'warn');
+      return;
+    }
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) { window.location.href = 'auth.html'; return; }
+    
+    currentUser = user;
+    const { data: profData, error: profError } = await supabaseClient.from('profiles').select('*').eq('id', user.id).single();
+    if (profError || !profData) { window.location.href = 'auth.html'; return; }
+    if (profData.role !== 'instructor' || !profData.onboarding_complete) { window.location.href = 'onboarding.html'; return; }
+    
+    profile = profData;
+    const { data: instData } = await supabaseClient.from('instructor_profiles').select('*').eq('id', user.id).maybeSingle();
+    instructorProfile = instData || {};
+    
+    S.instructor = {
+      name: profile.full_name || user.email.split('@')[0],
+      handle: profile.username || 'coach',
+      specs: profile.preferred_channel ? [profile.preferred_channel] : ['Fitness'],
+      bio: instructorProfile.bio || 'Professional Coach & Fitness Trainer',
+      profileUrl: window.location.host + '/coach/' + (profile.username || user.id),
+      avatar_url: profile.avatar_url || null,
+      phone: profile.phone || '',
+      socials: [{ label: 'Location', handle: profile.location || 'Remote' }, { label: 'Channel', handle: profile.preferred_channel || 'Direct' }]
+    };
+    
+    await loadAllDashboardData();
+    bindGlobalEvents();
+    setupRealtimeSubscriptions();
+    // Phase 4: Auto check-in engine
+    tick();
+    setInterval(tick, 60000);
+  } catch (err) {
+    console.error('Initialization error:', err);
+    toast('Error initializing dashboard', 'warn');
+  }
+}
+
+async function loadAllDashboardData() {
+  setBoot('Loading workspace…');
+  await loadServices();
+  await loadClients();
+  await loadSubscriptions();
+  await loadSessions();
+  if(typeof reconcileCompletedFromSessions==='function') reconcileCompletedFromSessions();
+  setBoot('Rendering…');
+  try { renderAll(); } catch(e) { console.error(e); hideBoot(); }
+}
+function reconcileCompletedFromSessions(){
+  if(!S.subs) return;
+  if(!S._lastCompleted) S._lastCompleted={};
+  S.subs.forEach(sub=>{
+    const real=(sub.sessions||[]).filter(s=>s.status==='completed').length;
+    sub.completed=real;
+    if(real>0) S._lastCompleted[sub.id]=real;
+  });
+}
+
+/* ---------------- 2. DATA LAYER ---------------- */
+async function loadServices() {
+  const { data, error } = await supabaseClient.from('services').select('*').eq('instructor_id', currentUser.id).order('created_at', { ascending: false });
+  if (!error) {
+    S.services = (data || []).map(s => ({ id: s.id, name: s.name || 'Unnamed', desc: s.description || '', rate: s.rate || 0, unit: s.unit || '/ session', visibility: s.visibility || 'public', archived: s.archived || false }));
+  }
+}
+
+async function loadClients() {
+  const { data, error } = await supabaseClient.from('instructor_clients').select('*, client:client_id(id, full_name, username, phone, avatar_url, created_at)').eq('instructor_id', currentUser.id);
+  if (!error) {
+    S.clients = (data || []).map(rel => {
+      const c = rel.client || {};
+      return { id: c.id || rel.client_id, relationshipId: rel.id, name: c.full_name || c.username || 'Client', phone: c.phone || 'No phone', avatar_url: c.avatar_url || null, since: fmtShort(c.created_at || rel.created_at) };
+    });
+  }
+}
+
+async function loadSubscriptions() {
+  const { data, error } = await supabaseClient
+    .from('subscriptions')
+    .select('*')
+    .eq('instructor_id', currentUser.id);
+
+  if (error) {
+    console.error('loadSubscriptions error:', error);
+    return;
+  }
+
+  if(!S._lastCompleted) S._lastCompleted = {};
+  S.subs = (data || []).map(sub => {
+    const dbCompleted = sub.completed_sessions || 0;
+    // If DB says 0 but we had a higher value before, keep higher until confirmed (prevents flash)
+    if(dbCompleted > 0) S._lastCompleted[sub.id] = dbCompleted;
+    const finalCompleted = dbCompleted || S._lastCompleted[sub.id] || 0;
+    return {
+    id: sub.id,
+    clientId: sub.client_id,
+    serviceId: sub.service_id,
+
+    rate: sub.rate || 0,
+    type: sub.billing_type || 'Session pack',
+
+    totalSessions: sub.total_sessions || 0,
+    completed: finalCompleted,
+
+    startDate: sub.start_date ? iso(sub.start_date) : todayISO(),
+    endDate: sub.end_date ? iso(sub.end_date) : null,
+
+    schedule: Array.isArray(sub.schedule)
+      ? sub.schedule
+      : ['Mon', 'Wed', 'Fri'],
+
+    time: sub.session_time || '09:00',
+
+    auto: sub.auto_checkin ?? false,
+
+    paymentStatus: sub.payment_status || 'Unpaid',
+    status: sub.status || 'draft',
+
+    pausedAt: sub.paused_at,
+    createdAt: sub.created_at,
+
+    notes: Array.isArray(sub.notes) ? sub.notes : [],
+
+    sessions: []
+  };
+  });
+}
+
+async function loadSessions() {
+  const { data, error } = await supabaseClient
+    .from('sessions')
+    .select('*')
+    .eq('instructor_id', currentUser.id)
+    .order('scheduled_at', { ascending: true });
+
+  if (error) {
+    console.error('loadSessions error:', error);
+    return;
+  }
+
+  // Clear existing session arrays before rebuilding them.
+  S.subs.forEach(sub => {
+    sub.sessions = [];
+  });
+
+  (data || []).forEach(sess => {
+    const sub = S.subs.find(s => s.id === sess.subscription_id);
+    if (!sub) return;
+
+    sub.sessions.push({
+      id: sess.id,
+      n: sess.session_number,
+
+      // Database → application
+      scheduledAt: sess.scheduled_at
+        ? new Date(sess.scheduled_at).getTime()
+        : null,
+
+      date: sess.scheduled_at
+        ? iso(sess.scheduled_at)
+        : todayISO(),
+
+      checkinAt: sess.checkin_at
+        ? new Date(sess.checkin_at).getTime()
+        : null,
+
+      startedAt: sess.started_at
+        ? new Date(sess.started_at).getTime()
+        : null,
+
+      completedAt: sess.completed_at
+        ? new Date(sess.completed_at).getTime()
+        : null,
+
+      status: sess.status || 'scheduled',
+
+      auto: sess.auto_checkin === true,
+
+      notes: sess.note || '',
+
+      // confirmed_by is UUID in your schema.
+      by: sess.confirmed_by || null
+    });
+  });
+
+  S.subs.forEach(sub => {
+    sub.sessions.sort((a, b) => {
+      const ad = a.scheduledAt || new Date(a.date).getTime();
+      const bd = b.scheduledAt || new Date(b.date).getTime();
+      return ad - bd;
+    });
+  });
+}
+
+/* ---------------- 3. REALTIME SUBSCRIPTIONS ---------------- */
+function setupRealtimeSubscriptions() {
+  if (!currentUser || realtimeChannel) return;
+  realtimeChannel = supabaseClient.channel('instructor-console-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'services', filter: `instructor_id=eq.${currentUser.id}` }, () => { loadServices().then(renderAll); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions', filter: `instructor_id=eq.${currentUser.id}` }, () => { loadSubscriptions().then(() => loadSessions().then(renderAll)); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `instructor_id=eq.${currentUser.id}` }, () => { loadSessions().then(renderAll); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'instructor_clients', filter: `instructor_id=eq.${currentUser.id}` }, () => { loadClients().then(renderAll); })
+    .subscribe();
+}
+
+/* ---------------- 4. COMPUTED HELPERS ---------------- */
+const getSub = id => S.subs.find(s => s.id === id);
+const getClient = id => S.clients.find(c => c.id === id);
+const getService = id => S.services.find(s => s.id === id);
+const clientName = sub => getClient(sub?.clientId)?.name || 'Client';
+const serviceName = sub => getService(sub?.serviceId)?.name || 'Service';
+const pct = sub => sub?.totalSessions ? Math.round((sub.completed / sub.totalSessions) * 100) : 0;
+const pendOf = sub => sub?.sessions?.find(x => x.status === 'checked_in');
+const activeSubs = () => S.subs.filter(s => s.status === 'active');
+const pendingList = () => S.subs.map(s => ({ sub: s, p: pendOf(s) })).filter(x => x.p && x.sub.status === 'active');
+
+function nextScheduled(sub) {
+  if (sub.status !== 'active') return null;
+  for (let i = 0; i < 8; i++) {
+    const d = addDays(todayISO(), i);
+    if (sub.schedule.includes(DAY[new Date(d + 'T12:00:00').getDay()])) return d;
+  }
+  return null;
+}
+
+function sessionsTodayCount() {
+  const wd = DAY[new Date().getDay()];
+  return activeSubs().filter(s => s.schedule.includes(wd)).length;
+}
+
+function uniqueActiveClients() {
+  return new Set(activeSubs().map(s => s.clientId)).size;
+}
+
+function totalConfirmed() {
+  return S.subs.reduce(
+    (total, sub) =>
+      total + sub.sessions.filter(session => session.status === 'completed').length,
+    0
+  );
+}
+
+async function logActivity(text) {
+  S.activity.unshift({ t: Date.now(), text });
+  S.activity = S.activity.slice(0, 30);
+  try {
+    await supabaseClient.from('activity_logs').insert({ instructor_id: currentUser.id, action_text: text, created_at: new Date().toISOString() });
+  } catch(e) { /* Fallback if table doesn't exist yet */ }
+}
+
+/* ---------------- 5. RENDERERS ---------------- */
+function setBoot(msg) { const el = $('#bootMsg'); if(el) el.textContent = msg; }
+function hideBoot() { const b = $('#loader'); if(!b) return; b.classList.add('hidden'); setTimeout(() => { try{b.remove();}catch(e){} }, 700); }
+
+function renderAll() {
+  try {
+    renderMast(); renderBoard(); renderPending(); renderServices(); renderClients(); renderBell();
+    if (view.page === 'detail') renderDetail();
+    if (ui.firstPaint) {
+      ui.firstPaint = false;
+      const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .08 });
+      $$('.reveal').forEach(el => io.observe(el));
+    }
+  } catch(err) { console.error('renderAll fatal', err); } finally { hideBoot(); }
+}
+
+function renderMast() {
+  const I = S.instructor;
+  const avaHTML = I.avatar_url ? `<img src="${esc(I.avatar_url)}" alt="Avatar">` : esc(initials(I.name));
+  $('#tbAva').innerHTML = avaHTML;
+  $('#mastContent').innerHTML = `
+    <div class="mastId">
+      <div class="avaWrap"><div class="ava">${avaHTML}</div><button class="avaEdit" data-act="editProfile" title="Edit profile">${icoPencil}</button></div>
+      <div class="mastName">
+        <h1>${esc(I.name)}</h1>
+        <div class="handleRow"><span class="handle">@${esc(I.handle)}</span>${I.specs.map(s => `<span class="specTag">${esc(s)}</span>`).join('')}</div>
+        <p class="mastBio">${esc(I.bio)}</p>
+        <div class="mastLinks">
+          <span class="linkChip copyable" data-act="copy" data-copy="https://${esc(I.profileUrl)}" title="Copy profile link">${icoLink}&nbsp;${esc(I.profileUrl)}</span>
+          ${I.socials.map(s => `<span class="linkChip">${esc(s.label)} · ${esc(s.handle)}</span>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px;align-items:flex-end">
+      <div class="mastActions">
+        <button class="btn btn-outlineLight" data-act="shareProfile">${icoLink} Share Profile</button>
+        <button class="btn btn-gold" data-act="referInstructor">Refer Instructor</button>
+        <button class="btn btn-light" data-act="connectClient" style="width:100%">Connect Client</button>
+      </div>
+      <div class="mastStats">
+        <div class="mastStat"><b class="mono" data-count="${totalConfirmed()}">0</b><span>Sessions confirmed</span></div>
+        <div class="mastStat"><b class="mono" data-count="${S.clients.length}">0</b><span>Clients</span></div>
+        <div class="mastStat"><b class="mono" data-count="${S.services.filter(s => !s.archived).length}">0</b><span>Live services</span></div>
+      </div>
+    </div>`;
+  $$('#mastContent [data-count]').forEach(el => countUp(el, +el.dataset.count));
+}
+
+function countUp(el, target) {
+  const t0 = performance.now(), dur = 750;
+  function f(t) {
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(target * e);
+    if (p < 1) requestAnimationFrame(f);
+  }
+  requestAnimationFrame(f);
+}
+
+function renderBoard() {
+  const t = new Date();
+  $('#tbDate').textContent = t.toLocaleDateString('en-US', { weekday: 'short' }) + ' · ' + t.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  $('#boardDate').textContent = t.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const pend = pendingList().length;
+  const cells = [
+    { lbl: 'Active Clients', n: uniqueActiveClients(), sub: 'on live programs' },
+    { lbl: 'Active Subscriptions', n: activeSubs().length, sub: 'currently running' },
+    { lbl: 'Sessions Today', n: sessionsTodayCount(), sub: 'scheduled on the board' },
+    { lbl: 'Pending Confirmations', n: pend, sub: pend ? 'sessions awaiting confirmation' : 'all caught up ✓', alert: pend > 0 }
+  ];
+  $('#boardCells').innerHTML = cells.map(c => `
+    <div class="cell ${c.alert ? 'alert' : ''}" ${c.alert ? 'onclick="document.getElementById(\'pendingWrap\').scrollIntoView({behavior:\'smooth\'})"' : ''}>
+      <div class="lbl">${c.alert ? '<span class="pulseDot"></span>' : ''}${c.lbl}</div>
+      <div class="num" data-count="${c.n}">0</div>
+      <div class="sub">${c.sub}</div>
+    </div>`).join('');
+  $$('#boardCells [data-count]').forEach(el => countUp(el, +el.dataset.count));
+}
+
+function renderPending() {
+  const list = pendingList();
+  if (!list.length) { $('#pendingWrap').innerHTML = ''; return; }
+  $('#pendingWrap').innerHTML = `
+    <div class="pendingPanel">
+      <header><span class="pulseDot"></span><h3>Pending Actions</h3><span class="mono">${list.length} session${list.length > 1 ? 's' : ''} awaiting confirmation</span></header>
+      ${list.map(({ sub, p }) => `
+        <div class="pendRow">
+          <span class="psn">#${pad(p.n)}</span>
+          <div class="who"><b>${esc(clientName(sub))}</b> · ${esc(serviceName(sub))}
+          <small>Checked in ${fmtTime(p.checkinAt)}${p.auto ? ' · auto (scheduled ' + sub.time + ')' : ''}</small></div>
+          <button class="btn btn-gold btn-sm" data-act="confirm" data-id="${sub.id}" data-sessid="${p.id || ''}">Confirm Session</button>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderServices() {
+  const live = S.services.filter(s => !s.archived), arch = S.services.filter(s => s.archived);
+  $('#svcCount').textContent = live.length + ' live';
+  $('#svcGrid').innerHTML = live.length ? live.map(s => svcCardHTML(s)).join('') : `<div class="panel empty" style="grid-column:1/-1">No services created yet. Click "＋ Add Service" to get started.</div>`;
+  $('#svcArchWrap').innerHTML = arch.length ? `
+    <button class="archToggle" onclick="ui.showArch=!ui.showArch;renderServices()">▸ Archived services (${arch.length})</button>
+    <div class="svcGrid" style="margin-top:12px;${ui.showArch ? '' : 'display:none'}">${arch.map(s => svcCardHTML(s, true)).join('')}</div>` : '';
+}
+
+function svcCardHTML(s, arch = false) {
+  return `<article class="svcCard ${arch ? 'archived' : ''}">
+    <div class="svcTop">
+      <h3>${esc(s.name)}</h3>
+      <div class="svcMenuWrap">
+        <button class="iconBtn" data-act="svcMenu" style="width:30px;height:30px">${icoDots}</button>
+        <div class="svcMenu">
+          <button data-act="svcEdit" data-id="${s.id}">✎&nbsp; Edit service</button>
+          ${arch ? `<button data-act="svcRestore" data-id="${s.id}">↺&nbsp; Restore</button>` : `<button class="danger" data-act="svcArchive" data-id="${s.id}">⌫&nbsp; Archive</button>`}
+        </div>
+      </div>
+    </div>
+    <p class="svcDesc">${esc(s.desc) || '<span class="empty">No description provided</span>'}</p>
+    <div class="svcFoot">
+      <span class="svcRate">${s.rate ? money(s.rate) : 'Custom'}<em>${s.rate ? esc(s.unit) : ''}</em></span>
+      <span class="vis ${s.visibility}">${s.visibility === 'public' ? '● Public' : icoLock + ' Private'}</span>
+    </div>
+  </article>`;
+}
+
+function meterHTML(sub) {
+  if(!S._lastCompleted) S._lastCompleted = {};
+  if(sub.completed > 0) S._lastCompleted[sub.id] = sub.completed;
+  const saved = S._lastCompleted[sub.id] || 0;
+  const t = sub.totalSessions, d = (typeof sub.completed === 'number' ? sub.completed : saved) || saved, pend = pendOf(sub) ? 1 : 0;
+  if (t <= 16) {
+    let c = ''; for (let i = 0; i < t; i++) c += `<i class="seg ${i < d ? 'done' : (i < d + pend ? 'pend' : '')}"></i>`;
+    return `<div class="segmeter">${c}</div>`;
+  }
+  return `<div class="bar"><i style="width:${pct(sub)}%"></i></div>`;
+}
+
+function cardActions(sub) {
+  if (sub.status === 'active') {
+    const p = pendOf(sub);
+    const main = p ? `<button class="btn btn-gold btn-sm" data-act="confirm" data-id="${sub.id}" data-sessid="${p.id || ''}">Confirm Session</button>` : `<button class="btn btn-pine btn-sm" data-act="checkin" data-id="${sub.id}">Check In</button>`;
+    return main + `<button class="btn btn-ghost btn-sm btn-view" data-act="view" data-id="${sub.id}" title="View full record">${icoEye} View</button>`;
+  }
+  if (sub.status === 'draft') return `<button class="btn btn-ghost btn-sm" data-act="activate" data-id="${sub.id}">Activate</button><button class="btn btn-ghost btn-sm btn-view" data-act="view" data-id="${sub.id}">${icoEye} View</button>`;
+  if (sub.status === 'paused') return `<button class="btn btn-ghost btn-sm" data-act="resume" data-id="${sub.id}">Resume</button><button class="btn btn-ghost btn-sm btn-view" data-act="view" data-id="${sub.id}">${icoEye} View</button>`;
+  const msg = sub.status === 'completed' ? 'Program finished' : sub.status === 'expired' ? 'Expired' : 'Cancelled';
+  return `<span class="nextMini">${msg}</span><span style="flex:1"></span><button class="btn btn-ghost btn-sm btn-view" data-act="view" data-id="${sub.id}">${icoEye} View</button>`;
+}
+
+function renderClients() {
+  const query = ($('#cliSearch')?.value || '').toLowerCase().trim();
+  const filters = ['all', 'active', 'paused', 'completed', 'expired', 'draft'];
+  $('#fChips').innerHTML = filters.map(f => `<button class="fChip ${ui.filter === f ? 'on' : ''}" onclick="ui.filter='${f}';renderClients()">${f.toUpperCase()}</button>`).join('');
+  
+  let filtered = S.subs.filter(sub => {
+    if (ui.filter !== 'all' && sub.status !== ui.filter) return false;
+    if (query) {
+      const cName = clientName(sub).toLowerCase();
+      const sName = serviceName(sub).toLowerCase();
+      return cName.includes(query) || sName.includes(query);
+    }
+    return true;
+  }).sort((a,b) => ({active:0,paused:1,draft:2,completed:3,expired:4,cancelled:5}[a.status] - {active:0,paused:1,draft:2,completed:3,expired:4,cancelled:5}[b.status]));
+  
+  $('#cliCount').textContent = filtered.length + ' subscriptions';
+  if (!filtered.length) {
+    $('#cliGrid').innerHTML = `<div class="panel empty" style="grid-column:1/-1">No client subscriptions matching the selected criteria.</div>`;
+    return;
+  }
+  
+  $('#cliGrid').innerHTML = filtered.map(sub => {
+    const pend = pendOf(sub);
+    const nextDate = nextScheduled(sub);
+    let mid = '';
+    if (pend) mid = `<div class="pendMini"><span class="pulseDot"></span>Session #${pad(pend.n)} checked in — needs confirmation</div>`;
+    else if (sub.status === 'active' && nextDate && nextDate !== todayISO()) mid = `<div class="nextMini">Next: ${DAY[new Date(nextDate+'T12:00:00').getDay()]} ${fmtShort(nextDate)} · ${sub.time}</div>`;
+    
+    return `
+    <article class="cliCard st-${sub.status}">
+      <div class="cliHead">
+        <span class="ava sm">${esc(initials(clientName(sub)))}</span>
+        <div class="cliWho"><h3>${esc(clientName(sub))}</h3><p>${esc(serviceName(sub))} · ${sub.totalSessions} sessions</p></div>
+        <span class="chip st-${sub.status}">${sub.status}</span>
+      </div>
+      <div>${meterHTML(sub)}
+        <div class="cliNums"><b>${sub.completed} / ${sub.totalSessions} sessions</b><span class="pct">${pct(sub)}%</span></div>
+      </div>
+      ${mid}
+      <div class="cliActions">${cardActions(sub)}</div>
+    </article>`;
+  }).join('');
+}
+
+function renderBell() {
+  const pList = pendingList();
+  const count = pList.length;
+  const badge = $('#bellBadge');
+  if (count > 0) { badge.textContent = count; badge.hidden = false; badge.classList.add('shake'); } 
+  else { badge.hidden = true; }
+  
+  $('#bellDD').innerHTML = `
+    <h4>Notifications & Pending</h4>
+    ${pList.length ? pList.map(({ sub, p }) => `
+      <div class="bellItem">
+        <span class="dot"></span>
+        <div class="txt"><b>${esc(clientName(sub))}</b> checked in<small>${esc(serviceName(sub))} · #${pad(p.n)}</small></div>
+        <button class="btn btn-gold btn-sm" onclick="openConfirm('${sub.id}', '${p.id || ''}')">Confirm</button>
+      </div>`).join('') : '<div class="bellItem"><span class="txt">All pending actions resolved!</span></div>'}
+    <h4>Recent activity</h4>
+    <ul class="bellAct">${S.activity.slice(0,6).map(a => `<li>${esc(a.text)}</li>`).join('')}</ul>`;
+}
+
+/* ---------------- 6. DETAIL VIEW RENDERERS ---------------- */
+function ringHTML(sub) {
+  // Prevent flash-to-zero: keep last known completed in memory
+  if(!S._lastCompleted) S._lastCompleted = {};
+  if(sub.completed > 0) S._lastCompleted[sub.id] = sub.completed;
+  const savedDone = S._lastCompleted[sub.id] || 0;
+  const done = (typeof sub.completed === 'number' ? sub.completed : savedDone) || savedDone || 0;
+  const total = Math.max(sub.totalSessions || 1, 1);
+  const pendN = pendOf(sub) ? Math.min(1, total - done) : 0;
+  const R = 84, C = 2 * Math.PI * R;
+  const fD = done / total, fP = pendN / total;
+  let ticks = '';
+  for (let i = 0; i < Math.min(total, 40); i++) {
+    const a = (i / total) * 2 * Math.PI - Math.PI / 2;
+    ticks += `<line x1="${100 + Math.cos(a) * 70}" y1="${100 + Math.sin(a) * 70}" x2="${100 + Math.cos(a) * 76}" y2="${100 + Math.sin(a) * 76}" stroke="${i < done ? '#0E3B2E' : (i < done + pendN ? '#EFA51C' : 'rgba(19,40,31,.18)')}" stroke-width="2.6" stroke-linecap="round"/>`;
+  }
+  return `<div class="ringWrap">
+    <svg viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="${R}" fill="none" stroke="rgba(19,40,31,.1)" stroke-width="11"/>
+      <circle class="arcPend" cx="100" cy="100" r="${R}" fill="none" stroke="#EFA51C" stroke-width="11" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}" data-t="${C * (1 - fP)}" transform="rotate(${-90 + 360 * fD} 100 100)"/>
+      <circle class="arcDone" cx="100" cy="100" r="${R}" fill="none" stroke="#0E3B2E" stroke-width="11" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}" data-t="${C * (1 - fD)}" transform="rotate(-90 100 100)"/>
+      ${ticks}
+    </svg>
+    <div class="ringCenter">
+      <span class="pc">${pct(sub)}%</span>
+      <span class="of">${done} of ${sub.totalSessions} sessions</span>
+      ${sub.totalSessions - done > 0 ? `<span class="rem">${sub.totalSessions - done} remaining</span>` : ''}
+    </div>
+  </div>
+  <div class="ringLegend">
+    <span><i style="background:var(--pine)"></i>Completed ${done}</span>
+    ${pendN ? `<span><i style="background:var(--gold)"></i>In session</span>` : ''}
+    <span><i style="background:rgba(19,40,31,.18)"></i>Remaining ${sub.totalSessions - done - pendN}</span>
+  </div>`;
+}
+
+function sessionRows(sub) {
+  const list = [...(sub.sessions || [])]
+    .sort((a, b) => b.n - a.n);
+
+  if (!list.length) {
+    return `
+      <p class="empty">
+        No sessions recorded yet.
+      </p>
+    `;
+  }
+
+  return list.map(se => {
+
+    const scheduled =
+      se.status === 'scheduled';
+
+    const pending =
+      se.status === 'checked_in';
+
+    const completed =
+      se.status === 'completed';
+
+    const open =
+      ui.pendOpen === `${sub.id}:${se.n}` ||
+      (
+        pending &&
+        ui.pendOpen === null &&
+        list[0] === se
+      );
+
+    let statusLabel = 'Scheduled';
+
+    if (pending) {
+      statusLabel = 'Awaiting confirmation';
+    } else if (completed) {
+      statusLabel = 'Completed';
+    }
+
+    const icon =
+      scheduled
+        ? '○'
+        : pending
+          ? '●'
+          : icoCheck;
+
+    const iconClass =
+      pending
+        ? 'pend'
+        : completed
+          ? 'done'
+          : '';
+
+    return `
+      <div
+        class="acc ${open ? 'open' : ''}"
+        data-key="${sub.id}:${se.n}"
+      >
+
+        <button
+          class="accHead"
+          data-act="acc"
+        >
+
+          <span class="accIcon ${iconClass}">
+            ${icon}
+          </span>
+
+          <span class="accT">
+
+            <b>
+              Session ${pad(se.n)}
+            </b>
+
+            <small>
+              ${se.scheduledAt
+                ? new Date(se.scheduledAt)
+                    .toLocaleDateString(
+                      'en-US',
+                      {
+                        month: 'short',
+                        day: 'numeric'
+                      }
+                    )
+                : fmtShort(se.date)
+              }
+
+              · ${statusLabel}
+
+              ${se.auto
+                ? ' · auto check-in'
+                : ''
+              }
+            </small>
+
+          </span>
+
+          <span class="accBy">
+            ${completed
+              ? 'Completed'
+              : pending
+                ? 'In session'
+                : 'Scheduled'
+            }
+          </span>
+
+          ${icoChev}
+
+        </button>
+
+        <div class="accBody">
+          <div class="accInner">
+            <div class="tline">
+
+              <div class="tStep ${scheduled ? 'empty' : ''}">
+                Scheduled
+                <span class="mono">
+                  ${
+                    se.scheduledAt
+                      ? fmtTime(se.scheduledAt)
+                      : '—'
+                  }
+                </span>
+              </div>
+
+              <div class="tStep ${pending || completed ? 'gold' : 'empty'}">
+                Checked in
+                <span class="mono">
+                  ${
+                    se.checkinAt
+                      ? fmtTime(se.checkinAt)
+                        + (
+                          se.auto
+                            ? ' · auto'
+                            : ''
+                        )
+                      : '—'
+                  }
+                </span>
+              </div>
+
+              <div class="tStep ${pending || completed ? 'gold' : 'empty'}">
+                Session started
+                <span class="mono">
+                  ${
+                    se.startedAt
+                      ? fmtTime(se.startedAt)
+                      : '—'
+                  }
+                </span>
+              </div>
+
+              ${
+                pending
+                  ? `
+                    <div class="tStep empty">
+                      Awaiting confirmation…
+                    </div>
+                  `
+                  : completed
+                    ? `
+                      <div class="tStep">
+                        Session completed
+                        <span class="mono">
+                          ${
+                            se.completedAt
+                              ? fmtTime(se.completedAt)
+                              : '✓'
+                          }
+                        </span>
+                      </div>
+                    `
+                    : ''
+              }
+
+              ${
+                se.notes
+                  ? `
+                    <div class="sessNote">
+                      ${esc(se.notes)}
+                    </div>
+                  `
+                  : ''
+              }
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `;
+  }).join('');
+}
+
+function statusTools(sub) {
+  const b = (act, cls, txt) =>
+    `<button class="btn ${cls} btn-sm" data-act="${act}" data-id="${sub.id}">${txt}</button>`;
+
+  const editBtn =
+    b('editSub', 'btn-ghost', '✎ Edit assignment');
+
+  switch (sub.status) {
+    case 'active':
+      return editBtn +
+        b('pause', 'btn-ghost', '⏸ Pause') +
+        b('completeSub', 'btn-ghost', '✓ Mark Completed') +
+        b('cancelSub', 'btn-danger', '✕ Cancel');
+
+    case 'paused':
+      return editBtn +
+        b('resume', 'btn-pine', '▶ Resume subscription');
+
+    case 'draft':
+      return editBtn +
+        b('activate', 'btn-pine', '▶ Activate subscription');
+
+    default:
+      return editBtn +
+        b('reactivate', 'btn-ghost', '↺ Re-activate');
+  }
+}
+
+function openDetail(subId) {
+  view.page = 'detail'; view.subId = subId;
+  $('#view-dash').hidden = true; $('#view-detail').hidden = false;
+  renderDetail(); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showDash() {
+  view.page = 'dash'; view.subId = null;
+  $('#view-detail').hidden = true; $('#view-dash').hidden = false;
+  renderAll();
+}
+
+function renderDetail() {
+  const sub = getSub(view.subId);
+  if (!sub) { showDash(); return; }
+  const cl = getClient(sub.clientId);
+  const sv = getService(sub.serviceId);
+  const p = pendOf(sub);
+  const nx = nextScheduled(sub);
+  
+let actionHTML = '';
+
+if (sub.status === 'active') {
+
+  const pendingSession = pendOf(sub);
+
+  const todaySession =
+    (sub.sessions || []).find(
+      s =>
+        s.date === todayISO() &&
+        s.status === 'scheduled'
+    );
+
+  if (pendingSession) {
+
+    actionHTML = `
+      <button
+        class="btn btn-gold"
+        data-act="confirm"
+        data-id="${sub.id}"
+        data-sessid="${pendingSession.id}"
+      >
+        Confirm Session #${pad(pendingSession.n)} — Completed
+      </button>
+
+      <span class="hint">
+        Checked in ${fmtTime(pendingSession.checkinAt)}
+        · started ${fmtTime(pendingSession.startedAt)}
+      </span>
+    `;
+
+  } else if (todaySession) {
+
+    actionHTML = `
+      <button
+        class="btn btn-pine"
+        data-act="checkin"
+        data-id="${sub.id}"
+      >
+        Check In — Session #${pad(todaySession.n)}
+      </button>
+
+      <span class="hint">
+        Scheduled today · ${sub.time}
+      </span>
+    `;
+
+  } else {
+
+    actionHTML = `
+      <button
+        class="btn btn-pine"
+        data-act="checkin"
+        data-id="${sub.id}"
+      >
+        Check In — Ad-hoc Session
+      </button>
+
+      <span class="hint">
+        ${nx
+          ? 'Next scheduled: '
+            + DAY[
+              new Date(
+                nx + 'T12:00:00'
+              ).getDay()
+            ]
+            + ' '
+            + fmtShort(nx)
+            + ' · '
+            + sub.time
+          : 'No upcoming scheduled session'
+        }
+      </span>
+    `;
+  }
+
+} else {
+
+  actionHTML = `
+    <span
+      class="hint"
+      style="margin-left:0"
+    >
+      This subscription is
+      <b>${esc(sub.status)}</b>
+      — manage it below.
+    </span>
+  `;
+}
+
+  $('#view-detail').innerHTML = `
+    <div class="detail ${view.clientView ? 'as-client' : ''}">
+      <button class="backLink" data-act="back">${icoBack} Back to dashboard</button>
+      <div class="dHead">
+        <span class="ava xl" style="background:radial-gradient(circle at 30% 25%,#F7C766,var(--gold) 55%,var(--gold2));color:#3A2503">${esc(initials(cl?.name || 'Client'))}</span>
+        <div>
+          <h1>${esc(cl?.name || 'Client').toUpperCase()}</h1>
+          <div class="dSub">${esc(sv?.name || 'Service')} · ${esc(sub.type)} · <span class="mono">${esc(cl?.phone || '—')}</span></div>
+        </div>
+        <div class="dHeadRight">
+          <span class="chip st-${sub.status}" style="font-size:11.5px;padding:7px 13px">${sub.status}</span>
+          <button class="btn btn-ghost btn-sm" data-act="clientView">${icoEye} ${view.clientView ? 'Instructor view' : 'Preview as client'}</button>
+          <button class="btn btn-ghost btn-sm staff-only" data-act="shareSub">🔗 Share</button>
+        </div>
+      </div>
+      <div class="clientBanner">👁 &nbsp;Client preview — this is the shared tracking page exactly as <b>${esc(firstName(cl?.name || 'Client'))}</b> sees it.</div>
+      <div class="dActionBar staff-only">${actionHTML}</div>
+      <div class="dGrid">
+        <div>
+          <div class="panel"><div class="panelTitle">Session Progress</div>${ringHTML(sub)}</div>
+          <div class="panel">
+            <div class="panelTitle">Subscription</div>
+            <div class="factRow"><span>Started</span><b>${fmtDate(sub.startDate)}</b></div>
+            <div class="factRow"><span>Expires</span><b>${fmtDate(sub.endDate)}</b></div>
+            <div class="factRow"><span>Rate</span><b class="mono">${sub.rate ? money(sub.rate) + ' / ' + esc((sv?.unit || '/ session').replace('/ ', '')) : 'Custom'}</b></div>
+            <div class="factRow"><span>Schedule</span><b>${(sub.schedule || []).join(' · ')}${sub.time ? ' · ' + sub.time : ''}</b></div>
+            <div class="factRow"><span>Payment status</span><b><span class="payChip ${sub.paymentStatus}">${sub.paymentStatus}</span></b></div>
+            <div class="factRow staff-only"><span>Auto check-in</span><b>${sub.auto ? 'On — scheduled days' : 'Off'}</b></div>
+          </div>
+          <div class="panel staff-only">
+            <div class="panelTitle">Manage Status</div>
+            <p style="font-size:12px;color:var(--mut);margin-bottom:10px">Draft → Active → Paused → Completed → Expired → Cancelled. Pausing freezes the clock and extends the end date on resume.</p>
+            <div class="statusTools">${statusTools(sub)}</div>
+            ${sub.status === 'paused' ? `<p style="font-size:12px;color:var(--gold-ink);margin-top:10px">Paused ${fmtDate(sub.pausedAt || sub.paused_at)} — time will be added back on resume.</p>` : ''}
+          </div>
+          <div class="panel staff-only">
+            <div class="panelTitle">Payment History</div>
+            ${(sub.payments || []).length ? (sub.payments).map(p => `<div class="payRow"><span class="payChip ${p.status}">${p.status}</span><span>${fmtShort(p.date)} · ${esc(p.method)}</span><span class="amt">${money(p.amount)}</span></div>`).join('') : '<p class="empty">No payment records.</p>'}
+          </div>
+        </div>
+        <div>
+          <div class="panel"><div class="panelTitle">Session History <span style="margin-left:auto;text-transform:none;letter-spacing:0">${(sub.sessions || []).length} logged</span></div>${sessionRows(sub)}</div>
+          <div class="panel staff-only">
+            <div class="panelTitle">Notes</div>
+            ${(sub.notes || []).length ? (sub.notes).map(n => `<div class="noteItem">${esc(n.text)}<small>${fmtDate(n.date)}</small></div>`).join('') : '<p class="empty">No notes yet.</p>'}
+            <form class="noteForm" onsubmit="addNote(event, '${sub.id}')">
+              <textarea name="note" rows="2" placeholder="Add a note about ${esc(firstName(cl?.name || 'Client'))}…" required></textarea>
+              <button class="btn btn-pine btn-sm" style="align-self:flex-end">Add note</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>`;
+    
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    $$('#view-detail .arcDone, #view-detail .arcPend').forEach(a => a.style.strokeDashoffset = a.dataset.t);
+  }));
+}
+
+/* ---------------- 7. ACTIONS & DATABASE MUTATIONS ---------------- */
+async function checkIn(subId) {
+  const sub = getSub(subId);
+
+  if (!sub || sub.status !== 'active') {
+    return toast(
+      'Subscription must be active to check in.',
+      'warn'
+    );
+  }
+
+  /*
+   * Do not allow another check-in while one
+   * is waiting for confirmation.
+   */
+  const pending = pendOf(sub);
+
+  if (pending) {
+    return toast(
+      `Session #${pad(pending.n)} is already awaiting confirmation.`,
+      'warn'
+    );
+  }
+
+  /*
+   * The subscription has a fixed number of sessions.
+   *
+   * completed_sessions tells us how many have already
+   * been consumed.
+   *
+   * The next session in the package is therefore:
+   *
+   * completed + 1
+   */
+  const completedCount =
+    Number(sub.completed || 0);
+
+  const totalSessions =
+    Number(sub.totalSessions || 0);
+
+  if (completedCount >= totalSessions) {
+    return toast(
+      'All sessions in this subscription have been completed.',
+      'warn'
+    );
+  }
+
+  const nextPackageNumber =
+    completedCount + 1;
+
+  const today =
+    todayISO();
+
+  /*
+   * First look for the package session that is
+   * scheduled for today.
+   *
+   * This is the normal path.
+   */
+  let session =
+    (sub.sessions || []).find(
+      s =>
+        s.n === nextPackageNumber &&
+        s.date === today &&
+        s.status === 'scheduled'
+    );
+
+  /*
+   * If today's scheduled session exists,
+   * CHECK IN THAT EXISTING ROW.
+   *
+   * Never INSERT another session.
+   */
+  if (session) {
+    const checkinAt =
+      new Date().toISOString();
+
+    const {
+      error
+    } = await supabaseClient
+      .from('sessions')
+      .update({
+        status: 'checked_in',
+
+        checkin_at:
+          checkinAt,
+
+        started_at:
+          checkinAt,
+
+        auto_checkin:
+          false,
+
+        updated_at:
+          checkinAt
+      })
+      .eq('id', session.id)
+      .eq('subscription_id', subId)
+      .eq('status', 'scheduled');
+
+    if (error) {
+      console.error(
+        'checkIn scheduled session:',
+        error
+      );
+
+      toast(
+        `Failed to check in: ${error.message}`,
+        'warn'
+      );
+
+      return;
+    }
+
+    toast(
+      `✓ ${firstName(clientName(sub))} checked in — session #${pad(session.n)} started.`,
+      'ok'
+    );
+
+    await loadAllDashboardData();
+
+    return;
+  }
+
+  /*
+   * There is no scheduled session today.
+   *
+   * Instead of creating session 9, 10, 11, etc.,
+   * find the next UNUSED scheduled session in the
+   * subscription package.
+   */
+  session =
+    (sub.sessions || [])
+      .filter(
+        s =>
+          s.status === 'scheduled' &&
+          Number(s.n) <= totalSessions
+      )
+      .sort(
+        (a, b) =>
+          Number(a.n) - Number(b.n)
+      )[0];
+
+  /*
+   * If we have a scheduled package session,
+   * use that existing row.
+   *
+   * This means the session still belongs to the
+   * original 8-session package.
+   */
+  if (session) {
+    const checkinAt =
+      new Date().toISOString();
+
+    const {
+      error
+    } = await supabaseClient
+      .from('sessions')
+      .update({
+        status: 'checked_in',
+
+        checkin_at:
+          checkinAt,
+
+        started_at:
+          checkinAt,
+
+        auto_checkin:
+          false,
+
+        updated_at:
+          checkinAt
+      })
+      .eq('id', session.id)
+      .eq('subscription_id', subId)
+      .eq('status', 'scheduled');
+
+    if (error) {
+      console.error(
+        'checkIn package session:',
+        error
+      );
+
+      toast(
+        `Failed to check in: ${error.message}`,
+        'warn'
+      );
+
+      return;
+    }
+
+    toast(
+      `✓ ${firstName(clientName(sub))} checked in — session #${pad(session.n)} started.`,
+      'ok'
+    );
+
+    await loadAllDashboardData();
+
+    return;
+  }
+
+  /*
+   * There is no unused scheduled session left.
+   *
+   * DO NOT create session 9+ automatically.
+   */
+  toast(
+    'No remaining session is available in this subscription.',
+    'warn'
+  );
+}
+
+function openConfirm(subId, sessionId) {
+  const sub = getSub(subId);
+
+  if (!sub) {
+    toast('Subscription not found.', 'warn');
+    return;
+  }
+
+  const se =
+    (sub.sessions || []).find(
+      x => x.id === sessionId
+    );
+
+  if (!se) {
+    toast(
+      'Session could not be found.',
+      'warn'
+    );
+    return;
+  }
+
+  if (se.status !== 'checked_in') {
+    toast(
+      'This session is not awaiting confirmation.',
+      'warn'
+    );
+    return;
+  }
+
+  const currentCompleted =
+    Number(sub.completed || 0);
+
+  const total =
+    Number(sub.totalSessions || 0);
+
+  const previewCompleted =
+    Math.min(
+      currentCompleted + 1,
+      total
+    );
+
+  const percentage =
+    total > 0
+      ? Math.round(
+          (previewCompleted / total) * 100
+        )
+      : 0;
+
+  openModal(`
+    <header>
+      <h3>Confirm Session #${pad(se.n)}</h3>
+
+      <button
+        class="iconBtn"
+        onclick="closeModal()"
+      >
+        ✕
+      </button>
+    </header>
+
+    <p class="mSub">
+      ${esc(clientName(sub))}
+      ·
+      ${esc(serviceName(sub))}
+      ·
+      ${fmtDate(se.date)}
+    </p>
+
+    <div class="mBody">
+
+      <div class="cfCard">
+
+        <div class="tStep gold">
+          Checked in
+          <span class="mono">
+            ${fmtTime(se.checkinAt)}
+          </span>
+        </div>
+
+        <div class="tStep gold">
+          Session started
+          <span class="mono">
+            ${fmtTime(se.startedAt)}
+          </span>
+        </div>
+
+        <div class="tStep">
+          Confirm completed
+          <span class="mono">
+            ${fmtTime(Date.now())}
+          </span>
+        </div>
+
+      </div>
+
+      <label>
+        Session note (optional)
+
+        <textarea
+          id="cfNote"
+          rows="2"
+          placeholder="e.g. Worked on hip mobility…"
+        ></textarea>
+      </label>
+
+      <div class="notifyPreview">
+        Session #${pad(se.n)} completed.
+
+        Your subscription is now
+        <b>${percentage}% complete</b>
+        (${previewCompleted}/${total}).
+
+        Keep going! 💪
+      </div>
+
+    </div>
+
+    <footer>
+
+      <button
+        class="btn btn-ghost"
+        onclick="closeModal()"
+      >
+        Not yet
+      </button>
+
+      <button
+        class="btn btn-gold"
+        onclick="doConfirm('${subId}', '${se.id}')"
+      >
+        ${icoCheck}
+        Confirm — notify
+        ${esc(firstName(clientName(sub)))}
+      </button>
+
+    </footer>
+  `);
+}
+
+async function doConfirm(subId, sessionId) {
+  const sub = getSub(subId);
+
+  if (!sub) {
+    toast('Subscription not found.', 'warn');
+    return;
+  }
+
+  const note =
+    $('#cfNote')?.value.trim() || null;
+
+  const se =
+    (sub.sessions || []).find(
+      x =>
+        x.id === sessionId ||
+        String(x.n) === String(sessionId)
+    );
+
+  if (!se) {
+    toast(
+      'Session could not be found.',
+      'warn'
+    );
+    return;
+  }
+
+  if (se.status !== 'checked_in') {
+    toast(
+      'Only a checked-in session can be completed.',
+      'warn'
+    );
+    return;
+  }
+
+  const completedAt =
+    new Date().toISOString();
+
+  /*
+   * Complete THIS exact session.
+   */
+  const {
+    data: completedSession,
+    error: sessErr
+  } = await supabaseClient
+    .from('sessions')
+    .update({
+      status: 'completed',
+
+      completed_at:
+        completedAt,
+
+      confirmed_by:
+        currentUser.id,
+
+      note:
+        note || se.notes || null,
+
+      updated_at:
+        completedAt
+    })
+    .eq('id', se.id)
+    .eq('subscription_id', subId)
+    .eq('status', 'checked_in')
+    .select()
+    .maybeSingle();
+
+  if (sessErr) {
+    console.error(
+      'doConfirm session error:',
+      sessErr
+    );
+
+    toast(
+      `Failed to confirm session: ${sessErr.message}`,
+      'warn'
+    );
+
+    return;
+  }
+
+  /*
+   * If no row was returned, the session was probably
+   * already changed by another action/tab.
+   */
+  if (!completedSession) {
+    toast(
+      'This session has already been completed or is no longer pending.',
+      'warn'
+    );
+
+    await loadAllDashboardData();
+
+    return;
+  }
+
+  /*
+   * Calculate completed sessions from the actual
+   * session records instead of blindly doing:
+   *
+   * sub.completed + 1
+   *
+   * This prevents the counter from drifting away
+   * from session history.
+   */
+  const completedSessions =
+    (sub.sessions || []).filter(
+      s =>
+        s.id === se.id ||
+        s.status === 'completed'
+    ).length;
+
+  /*
+   * Better: count the completed rows directly
+   * from Supabase so this is authoritative.
+   */
+  const {
+    count,
+    error: countErr
+  } = await supabaseClient
+    .from('sessions')
+    .select(
+      'id',
+      {
+        count: 'exact',
+        head: true
+      }
+    )
+    .eq('subscription_id', subId)
+    .eq('status', 'completed');
+
+  if (countErr) {
+    console.error(
+      'Completed session count error:',
+      countErr
+    );
+
+    toast(
+      'Session completed, but progress could not be calculated.',
+      'warn'
+    );
+
+    await loadAllDashboardData();
+
+    return;
+  }
+
+  const totalSessions =
+    Number(sub.totalSessions || 0);
+
+  const newCompleted =
+    Math.min(
+      Number(count || 0),
+      totalSessions
+    );
+
+  const newStatus =
+    newCompleted >= totalSessions &&
+    totalSessions > 0
+      ? 'completed'
+      : 'active';
+
+  /*
+   * Keep subscription progress synchronized
+   * with actual completed session records.
+   */
+  const {
+    error: subErr
+  } = await supabaseClient
+    .from('subscriptions')
+    .update({
+      completed_sessions:
+        newCompleted,
+
+      status:
+        newStatus
+    })
+    .eq('id', subId);
+
+  if (subErr) {
+    console.error(
+      'Subscription progress update error:',
+      subErr
+    );
+
+    toast(
+      `Session completed, but progress could not be updated: ${subErr.message}`,
+      'warn'
+    );
+
+    await loadAllDashboardData();
+
+    return;
+  }
+
+  closeModal();
+
+  await loadAllDashboardData();
+
+  const percentage =
+    totalSessions
+      ? Math.round(
+          (newCompleted /
+            totalSessions) * 100
+        )
+      : 0;
+
+  toast(
+    `✓ Session #${pad(se.n)} completed. Your subscription is now ${percentage}% complete (${newCompleted}/${totalSessions}).`,
+    'ok'
+  );
+
+  if (
+    newStatus === 'completed'
+  ) {
+    setTimeout(
+      () =>
+        toast(
+          '🎉 Subscription completed — all sessions delivered!',
+          'ok'
+        ),
+      800
+    );
+  }
+}
+
+
+async function undoConfirmSession(subId, sessionId){
+  const sub = getSub(subId);
+  if(!sub){ toast('Subscription not found.', 'warn'); return; }
+  const se = (sub.sessions||[]).find(x=>x.id===sessionId);
+  if(!se){ toast('Session not found.', 'warn'); return; }
+  if(se.status !== 'completed'){
+    toast('Only a completed session can be undone.', 'warn');
+    return;
+  }
+  if(!confirm(`Undo confirmation for Session #${pad(se.n)}?\nThis will set it back to 'checked in' and reduce progress by 1.`)) return;
+
+  const { error: sessErr } = await supabaseClient
+    .from('sessions')
+    .update({
+      status: 'checked_in',
+      completed_at: null,
+      confirmed_by: null,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', se.id)
+    .eq('subscription_id', subId);
+
+  if(sessErr){
+    console.error('undoConfirm session error:', sessErr);
+    toast(`Failed to undo: ${sessErr.message}`, 'warn');
+    return;
+  }
+
+  // Recount completed from DB (authoritative)
+  const { count, error: countErr } = await supabaseClient
+    .from('sessions')
+    .select('id', { count: 'exact', head: true })
+    .eq('subscription_id', subId)
+    .eq('status', 'completed');
+
+  if(countErr){
+    console.error('Count error after undo:', countErr);
+    await loadAllDashboardData();
+    toast('Session undone, but progress recount failed.', 'warn');
+    return;
+  }
+
+  const newCompleted = Math.max(0, Number(count||0));
+  const totalSessions = Number(sub.totalSessions||0);
+  const newStatus = newCompleted >= totalSessions && totalSessions>0 ? 'completed' : 'active';
+
+  // Update local cache to prevent flash to zero
+  if(!S._lastCompleted) S._lastCompleted = {};
+  S._lastCompleted[sub.id] = newCompleted;
+
+  const { error: subErr } = await supabaseClient
+    .from('subscriptions')
+    .update({
+      completed_sessions: newCompleted,
+      status: newStatus
+    })
+    .eq('id', subId);
+
+  if(subErr){
+    console.error('Subscription update after undo error:', subErr);
+    toast(`Session undone, but subscription update failed: ${subErr.message}`, 'warn');
+    await loadAllDashboardData();
+    return;
+  }
+
+  await logActivity(`Undo confirmed — ${clientName(sub)} · Session #${pad(se.n)} back to checked-in`);
+  closeModal();
+  await loadAllDashboardData();
+  toast(`↩ Session #${pad(se.n)} undone — back to awaiting confirmation (${newCompleted}/${totalSessions})`, 'warn');
+}
+
+function openUndoConfirmModal(subId, sessionId){
+  const sub = getSub(subId);
+  const se = (sub.sessions||[]).find(x=>x.id===sessionId);
+  if(!sub || !se) return;
+  openModal(`
+    <header><h3>Undo Session #${pad(se.n)}</h3><button class="iconBtn" onclick="closeModal()">✕</button></header>
+    <p class="mSub">${esc(clientName(sub))} · ${esc(serviceName(sub))} · Completed ${fmtTime(se.completedAt)}</p>
+    <div class="mBody">
+      <div class="cfCard" style="background:var(--red-bg);border:1px solid rgba(191,66,41,.18)">
+        <div style="font-size:13px;line-height:1.5">This will revert <b>Session #${pad(se.n)}</b> from <b>Completed</b> back to <b>Checked-in (awaiting confirmation)</b>.<br><br>Progress will go from <b>${sub.completed}/${sub.totalSessions}</b> to <b>${Math.max(0, sub.completed-1)}/${sub.totalSessions}</b>.</div>
+      </div>
+      <label>Reason for undo (optional)<textarea id="undoReason" rows="2" placeholder="e.g. Confirmed by mistake…"></textarea></label>
+    </div>
+    <footer><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-danger" onclick="undoConfirmSession('${subId}','${sessionId}')">↩ Undo Confirmation</button></footer>
+  `);
+}
+
+
+async function addNote(e, subId) {
+  e.preventDefault();
+  const sub = getSub(subId);
+  const txt = e.target.note.value.trim();
+  if (!txt || !sub) return;
+
+  const currentNotes = sub.notes || [];
+  const newNotes = [...currentNotes, { date: todayISO(), text: txt }];
+  await supabaseClient.from('subscriptions').update({ notes: newNotes }).eq('id', subId);
+  
+  await loadAllDashboardData();
+  toast('Note saved.', 'ok');
+}
+
+function pauseSub(subId) {
+  const sub = getSub(subId);
+  openModal(`
+    <header><h3>Pause subscription</h3><button class="iconBtn" onclick="closeModal()">✕</button></header>
+    <p class="mSub">${esc(clientName(sub))} · ${esc(serviceName(sub))} — the clock stops; the end date extends automatically on resume.</p>
+    <div class="mBody"><label>Reason (optional)<textarea id="pzReason" rows="2" placeholder="e.g. Traveling for two weeks…"></textarea></label></div>
+    <footer><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-pine" onclick="doPause('${subId}')">⏸ Pause</button></footer>
+  `);
+}
+
+async function doPause(subId) {
+  const sub = getSub(subId);
+  if (!sub) {
+    toast('Subscription not found.', 'warn');
+    return;
+  }
+
+  const r = $('#pzReason')?.value.trim();
+
+  const currentNotes = Array.isArray(sub.notes)
+    ? sub.notes
+    : [];
+
+  const updatePayload = {
+    status: 'paused',
+    paused_at: new Date().toISOString()
+  };
+
+  if (r) {
+    updatePayload.notes = [
+      ...currentNotes,
+      {
+        date: todayISO(),
+        text: 'Subscription paused. Reason: ' + r
+      }
+    ];
+  }
+
+  const { error } = await supabaseClient
+    .from('subscriptions')
+    .update(updatePayload)
+    .eq('id', subId);
+
+  if (error) {
+    console.error('Pause subscription error:', error);
+    toast(`Failed to pause subscription: ${error.message}`, 'warn');
+    return;
+  }
+
+  closeModal();
+  await loadAllDashboardData();
+
+  toast(
+    'Subscription paused for ' + firstName(clientName(sub)) + '.',
+    'ok'
+  );
+}
+
+async function resumeSub(subId) {
+  const sub = getSub(subId);
+
+  if (!sub) {
+    toast('Subscription not found.', 'warn');
+    return;
+  }
+
+  let extendedDays = 0;
+  let newEndDate = sub.endDate || null;
+
+  // Only extend the end date if one actually exists.
+  if (sub.pausedAt && sub.endDate) {
+    const pausedAt = new Date(sub.pausedAt);
+
+    if (!Number.isNaN(pausedAt.getTime())) {
+      extendedDays = Math.max(
+        1,
+        Math.ceil((Date.now() - pausedAt.getTime()) / 86400000)
+      );
+
+      newEndDate = addDays(sub.endDate, extendedDays);
+    }
+  }
+
+  const updatePayload = {
+    status: 'active',
+    end_date: newEndDate,
+    paused_at: null
+  };
+
+  if (sub.pausedAt) {
+    const currentNotes = Array.isArray(sub.notes) ? sub.notes : [];
+
+    const resumeNote = extendedDays > 0
+      ? `Resumed — end date extended by ${extendedDays} days to cover the pause.`
+      : 'Subscription resumed. No end date was set, so the end date was not changed.';
+
+    updatePayload.notes = [
+      ...currentNotes,
+      {
+        date: todayISO(),
+        text: resumeNote
+      }
+    ];
+  }
+
+  const { error } = await supabaseClient
+    .from('subscriptions')
+    .update(updatePayload)
+    .eq('id', subId);
+
+  if (error) {
+    console.error('Resume subscription error:', error);
+    toast(`Failed to resume subscription: ${error.message}`, 'warn');
+    return;
+  }
+
+  await loadAllDashboardData();
+
+  if (extendedDays > 0) {
+    toast(`Resumed — end date extended ${extendedDays} days.`, 'ok');
+  } else {
+    toast('Subscription resumed.', 'ok');
+  }
+}
+
+async function activateSub(subId) {
+  await supabaseClient.from('subscriptions').update({ status: 'active' }).eq('id', subId);
+  await loadAllDashboardData(); toast('Subscription activated.', 'ok');
+}
+
+async function completeSub(subId) {
+  await supabaseClient.from('subscriptions').update({ status: 'completed' }).eq('id', subId);
+  await loadAllDashboardData(); toast('Marked as completed.', 'ok');
+}
+
+function cancelSub(subId) {
+  const sub = getSub(subId);
+  openModal(`
+    <header><h3>Cancel subscription?</h3><button class="iconBtn" onclick="closeModal()">✕</button></header>
+    <p class="mSub">${esc(clientName(sub))} · ${esc(serviceName(sub))}. Session history and records are kept — the plan stops immediately.</p>
+    <footer><button class="btn btn-ghost" onclick="closeModal()">Keep it</button><button class="btn btn-danger" onclick="doCancel('${subId}')">Cancel subscription</button></footer>
+  `);
+}
+
+async function doCancel(subId) {
+  await supabaseClient.from('subscriptions').update({ status: 'cancelled' }).eq('id', subId);
+  closeModal(); await loadAllDashboardData(); toast('Subscription cancelled.', 'warn');
+}
+
+async function reactivateSub(subId) {
+  await supabaseClient.from('subscriptions').update({ status: 'active' }).eq('id', subId);
+  await loadAllDashboardData(); toast('Subscription re-activated.', 'ok');
+}
+
+/* ---------------- EDIT ASSIGNED SERVICE ---------------- */
+
+function openEditSubscription(subId) {
+  const sub = getSub(subId);
+
+  if (!sub) {
+    toast('Subscription not found.', 'warn');
+    return;
+  }
+
+  const client = getClient(sub.clientId);
+
+  if (!client) {
+    toast('Client not found.', 'warn');
+    return;
+  }
+
+  const service = getService(sub.serviceId);
+
+  if (!service) {
+    toast('Assigned service not found.', 'warn');
+    return;
+  }
+
+  /*
+   * Load the existing subscription into the same
+   * wizard state used when creating an assignment.
+   */
+  WA = {
+    step: 2,
+
+    editing: true,
+    editingSubId: sub.id,
+
+    clientId: sub.clientId,
+    newClient: null,
+
+    serviceId: sub.serviceId,
+
+    rate: sub.rate ?? null,
+    type: sub.type || 'Session pack',
+
+    sessions: Math.max(
+      1,
+      Number(sub.totalSessions || 1)
+    ),
+
+    start: sub.startDate || todayISO(),
+    end: sub.endDate || '',
+
+    days: new Set(
+      Array.isArray(sub.schedule)
+        ? sub.schedule
+        : ['Mon', 'Wed', 'Fri']
+    ),
+
+    time: sub.time || '09:00',
+
+    auto: sub.auto ?? false,
+
+    pay: sub.paymentStatus || 'Unpaid',
+
+    note: Array.isArray(sub.notes) && sub.notes.length
+      ? (sub.notes[sub.notes.length - 1]?.text || '')
+      : '',
+
+    draft: sub.status === 'draft'
+  };
+
+  ui.endTouched = true;
+
+  renderWz();
+}
+
+/* ---------------- 8. ASSIGNMENT WIZARD ---------------- */
+function openAssign() {
+  if (!S.clients.length || !S.services.filter(s=>!s.archived).length) {
+    toast('You need at least one client and one live service created first', 'warn'); return;
+  }
+  WA = { step: 1, clientId: '', newClient: null, serviceId: '', rate: null, type: 'Session pack', sessions: 8, start: todayISO(), end: '', days: new Set(['Mon', 'Wed', 'Fri']), time: '10:00', auto: true, pay: 'Paid', note: '', draft: false };
+  renderWz();
+}
+
+function wzShell(body) {
+  const labels = ['Client', 'Service', 'Details', 'Confirm'];
+
+  const title = WA.editing
+    ? 'Edit Assigned Service'
+    : 'Assign Client a Service';
+
+  openModal(`
+    <header>
+      <h3>${title}</h3>
+      <button class="iconBtn" onclick="closeModal()">✕</button>
+    </header>
+    <div class="wzSteps">${labels.map((l, i) => `<div class="wzStep ${WA.step === i + 1 ? 'on' : ''} ${WA.step > i + 1 ? 'doneStep' : ''}">${l}</div>`).join('')}</div>
+    <div class="mBody" id="wzBody">${body}</div>
+    <footer id="wzFoot"></footer>
+  `, true);
+}
+
+function renderWz() {
+  if (WA.step === 1) wzStep1();
+  else if (WA.step === 2) wzStep2();
+  else if (WA.step === 3) wzStep3();
+  else wzStep4();
+}
+
+function wzStep1() {
+  if (WA.editing) {
+    const client = getClient(WA.clientId);
+
+    wzShell(`
+      <div class="cfCard">
+        <div class="sumRow">
+          <span>Client</span>
+          <b>${esc(client?.name || 'Unknown client')}</b>
+        </div>
+
+        <div class="sumRow" style="border:none">
+          <span>Assignment</span>
+          <b>Edit existing service assignment</b>
+        </div>
+      </div>
+
+      <p class="mSub" style="margin-top:12px">
+        The client stays attached to this subscription. You can change
+        the assigned service and subscription details in the next steps.
+      </p>
+    `);
+
+    $('#wzFoot').innerHTML =
+      `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+       <button class="btn btn-pine" onclick="WA.step=2;renderWz()">Next → Service</button>`;
+
+    return;
+  }
+
+  wzShell(`
+    <div style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto">
+      ${S.clients.map(c => `
+        <label class="pickRow ${WA.clientId === c.id ? 'on' : ''}">
+          <input type="radio" name="wzCl" value="${c.id}" ${WA.clientId === c.id ? 'checked' : ''}>
+          <span class="ava sm">${esc(initials(c.name))}</span>
+          <span class="prTxt">
+            <b>${esc(c.name)}</b>
+            <small>${esc(c.phone || '')} · since ${esc(c.since || '—')}</small>
+          </span>
+          <span class="prRate">
+            ${S.subs.filter(s => s.clientId === c.id && s.status === 'active').length} active
+          </span>
+        </label>
+      `).join('')}
+
+      <label class="pickRow ${WA.newClient ? 'on' : ''}" id="wzNewRow">
+        <input type="radio" name="wzCl" value="__new" ${WA.newClient ? 'checked' : ''}>
+        <span class="prTxt">
+          <b>＋ New client</b>
+          <small>Add someone not on your roster yet</small>
+        </span>
+      </label>
+    </div>
+
+    <div id="wzNewForm"
+      style="display:${WA.newClient ? 'grid' : 'none'};
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:10px">
+
+      <label>
+        Full name
+        <input id="ncName"
+          type="text"
+          value="${esc(WA.newClient?.name || '')}"
+          placeholder="e.g. Sara Ibrahim">
+      </label>
+
+      <label>
+        Phone
+        <input id="ncPhone"
+          type="text"
+          value="${esc(WA.newClient?.phone || '')}"
+          placeholder="080…">
+      </label>
+    </div>
+  `);
+
+  $('#wzFoot').innerHTML =
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-pine" id="wzNext">Next → Select service</button>`;
+
+  $$('#wzBody input[name=wzCl]').forEach(r =>
+    r.addEventListener('change', () => {
+      $$('#wzBody .pickRow').forEach(p =>
+        p.classList.remove('on')
+      );
+
+      r.closest('.pickRow').classList.add('on');
+
+      if (r.value === '__new') {
+        WA.newClient =
+          WA.newClient || { name: '', phone: '' };
+
+        WA.clientId = '';
+
+        $('#wzNewForm').style.display = 'grid';
+      } else {
+        WA.clientId = r.value;
+        WA.newClient = null;
+
+        $('#wzNewForm').style.display = 'none';
+      }
+    })
+  );
+
+  $('#wzNext').onclick = () => {
+    if (!WA.clientId && !WA.newClient) {
+      return toast('Pick a client.', 'warn');
+    }
+
+    if (WA.newClient) {
+      WA.newClient.name =
+        $('#ncName').value.trim();
+
+      WA.newClient.phone =
+        $('#ncPhone').value.trim();
+
+      if (!WA.newClient.name) {
+        return toast('Enter the client name.', 'warn');
+      }
+    }
+
+    WA.step = 2;
+    renderWz();
+  };
+}
+
+function wzStep2() {
+  const live = S.services.filter(s => !s.archived);
+  wzShell(live.length ? `<div style="display:flex;flex-direction:column;gap:8px">
+    ${live.map(s => `
+      <label class="pickRow ${WA.serviceId === s.id ? 'on' : ''}">
+        <input type="radio" name="wzSv" value="${s.id}" ${WA.serviceId === s.id ? 'checked' : ''}>
+        <span class="prTxt"><b>${esc(s.name)}</b><small>${esc((s.desc || '').slice(0, 70))}${s.visibility === 'private' ? ' · 🔒 private' : ''}</small></span>
+        <span class="prRate">${s.rate ? money(s.rate) + ' ' + esc(s.unit) : 'Custom'}</span>
+      </label>`).join('')}
+  </div>` : `<p class="empty">No services yet — create one first from the Services section.</p>`);
+  
+  $('#wzFoot').innerHTML = `<button class="btn btn-ghost" onclick="WA.step=1;renderWz()">← Back</button><button class="btn btn-pine" id="wzNext">Next → Subscription details</button>`;
+  $$('#wzBody input[name=wzSv]').forEach(r => r.addEventListener('change', () => {
+    $$('#wzBody .pickRow').forEach(p => p.classList.remove('on')); r.closest('.pickRow').classList.add('on'); WA.serviceId = r.value;
+  }));
+  $('#wzNext').onclick = () => {
+  if (!WA.serviceId) {
+    return toast('Pick a service.', 'warn');
+  }
+
+  const sv = getService(WA.serviceId);
+
+  // Only use the service's default rate when
+  // creating a brand-new assignment.
+  if (!WA.editing) {
+    WA.rate = sv.rate || null;
+  }
+
+  if (!WA.editing) {
+    ui.endTouched = false;
+  }
+
+  WA.step = 3;
+  renderWz();
+
+  if (!WA.editing) {
+    suggestEnd();
+  }
+};
+}
+
+function suggestEnd() {
+  if (ui.endTouched) return;
+  const wk = WA.days.size || 1, weeks = Math.ceil(WA.sessions / wk);
+  WA.end = addDays(WA.start, weeks * 7 + 6);
+  const el = $('#wzEnd'); if (el) el.value = WA.end;
+  const hint = $('#wzEndHint'); if (hint) hint.textContent = `Auto: ~${weeks} week${weeks > 1 ? 's' : ''} at ${wk} session${wk > 1 ? 's' : ''}/week`;
+}
+
+function wzStep3() {
+  wzShell(`
+    <div class="fRow">
+      <label>Rate<div class="money"><span>₦</span><input id="wzRate" type="number" min="0" value="${WA.rate ?? ''}" placeholder="Custom"></div></label>
+      <label>Billing type<select id="wzType">${['Session pack', 'Monthly', 'Block'].map(t => `<option ${WA.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+    </div>
+    <div class="fRow">
+      <label>Number of sessions<input id="wzSessions" type="number" min="1" value="${WA.sessions}"></label>
+      <label>Payment status<select id="wzPay">${['Paid', 'Partial', 'Pending', 'Unpaid'].map(p => `<option ${WA.pay === p ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
+    </div>
+    <div class="fRow">
+      <label>Start date<input id="wzStart" type="date" value="${WA.start}"></label>
+      <label>End date <span id="wzEndHint" style="font-weight:400;color:var(--gold-ink)"></span><input id="wzEnd" type="date" value="${WA.end}"></label>
+    </div>
+    <label>Training days<div class="dayChips" id="wzDays">
+      ${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => `<button type="button" class="dayChip ${WA.days.has(d) ? 'on' : ''}" data-d="${d}">${d}</button>`).join('')}
+    </div></label>
+    <div class="fRow">
+      <label>Session time<input id="wzTime" type="time" value="${WA.time}"></label>
+      <div class="switchRow"><span style="font-size:13px"><b>Auto check-in</b><br><small style="color:var(--mut)">Checks the client in on scheduled days</small></span>
+      <label class="switch"><input type="checkbox" id="wzAuto" ${WA.auto ? 'checked' : ''}><i></i></label></div>
+    </div>
+    <label>Notes<textarea id="wzNote" rows="2" placeholder="Anything to remember about this plan…">${esc(WA.note)}</textarea></label>
+    <div class="switchRow"><span style="font-size:13px"><b>Save as Draft</b><br><small style="color:var(--mut)">Doesn’t start until you activate it</small></span>
+    <label class="switch"><input type="checkbox" id="wzDraft" ${WA.draft ? 'checked' : ''}><i></i></label></div>
+  `);
+ $('#wzFoot').innerHTML = `
+  <button
+    class="btn btn-ghost"
+    onclick="WA.step=3;renderWz()">
+    ← Back
+  </button>
+
+  <button
+    class="btn btn-gold"
+    onclick="${WA.editing ? 'updateSubscription()' : 'createSub()'}">
+    ${WA.editing
+      ? 'Save Changes'
+      : (WA.draft ? 'Save Draft' : 'Create Subscription')}
+  </button>`;
+  
+  $('#wzDays').onclick = e => {
+    const b = e.target.closest('.dayChip'); if (!b) return;
+    const d = b.dataset.d; WA.days.has(d) ? WA.days.delete(d) : WA.days.add(d); b.classList.toggle('on'); suggestEnd();
+  };
+  $('#wzSessions').oninput = e => { WA.sessions = Math.max(1, +e.target.value || 1); suggestEnd(); };
+  $('#wzStart').onchange = e => { WA.start = e.target.value; suggestEnd(); };
+  $('#wzEnd').oninput = e => { ui.endTouched = true; WA.end = e.target.value; };
+  $('#wzNext').onclick = () => {
+    WA.rate = $('#wzRate').value ? +$('#wzRate').value : null;
+    WA.type = $('#wzType').value; WA.pay = $('#wzPay').value; WA.time = $('#wzTime').value;
+    WA.auto = $('#wzAuto').checked; WA.note = $('#wzNote').value.trim(); WA.draft = $('#wzDraft').checked;
+    if (!WA.end || WA.end < WA.start) return toast('End date must be after the start date.', 'warn');
+    WA.step = 4; renderWz();
+  };
+  suggestEnd();
+}
+
+function wzStep4() {
+  const sv = getService(WA.serviceId);
+  const who = WA.newClient ? esc(WA.newClient.name) + ' <span class="chip st-draft" style="font-size:9px">new</span>' : esc(getClient(WA.clientId).name);
+  const total = WA.rate ? WA.rate * WA.sessions : null;
+  wzShell(`
+    <div class="cfCard">
+      <div class="sumRow"><span>Client</span><b>${who}</b></div>
+      <div class="sumRow"><span>Service</span><b>${esc(sv.name)}</b></div>
+      <div class="sumRow"><span>Rate</span><b class="mono">${WA.rate ? money(WA.rate) + ' ' + esc(sv.unit.replace('/ ', '')) : 'Custom'}</b></div>
+      <div class="sumRow"><span>Sessions</span><b class="mono">${WA.sessions} × ${WA.type}</b></div>
+      <div class="sumRow"><span>Window</span><b>${fmtDate(WA.start)} → ${fmtDate(WA.end)}</b></div>
+      <div class="sumRow"><span>Schedule</span><b>${[...WA.days].join(' · ') || '—'} · ${WA.time}${WA.auto ? ' · auto check-in' : ''}</b></div>
+      <div class="sumRow"><span>Payment</span><b><span class="payChip ${WA.pay}">${WA.pay}</span>${total ? ` <span class="mono" style="font-size:12px">${money(total)} total</span>` : ''}</b></div>
+      <div class="sumRow" style="border:none"><span>${WA.editing ? 'Status' : 'Starts as'}</span><b>${WA.editing ? esc(WA.draft ? 'Draft' : 'Active'): (WA.draft ? 'Draft — activate later' : 'Active immediately')}</b></div>
+    </div>
+    ${WA.note ? `<div class="sessNote">${esc(WA.note)}</div>` : ''}
+  `);
+  $('#wzFoot').innerHTML = `<button class="btn btn-ghost" onclick="WA.step=3;renderWz()">← Back</button><button class="btn btn-gold" onclick="createSub()">${WA.draft ? 'Save Draft' : 'Create Subscription'}</button>`;
+}
+
+async function createSub() {
+  let clientId = WA.clientId;
+
+  // ----------------------------------------------------------
+  // Create new client if necessary
+  // ----------------------------------------------------------
+  if (WA.newClient) {
+    const { data: newClientData, error: clientErr } =
+      await supabaseClient
+        .from('profiles')
+        .insert([{
+          full_name: WA.newClient.name,
+          phone: WA.newClient.phone,
+          role: 'client',
+          onboarding_complete: true
+        }])
+        .select()
+        .single();
+
+    if (clientErr) {
+      toast('Failed to create client profile', 'warn');
+      console.error(clientErr);
+      return;
+    }
+
+    clientId = newClientData.id;
+
+    const { error: relationErr } =
+      await supabaseClient
+        .from('instructor_clients')
+        .insert({
+          instructor_id: currentUser.id,
+          client_id: clientId
+        });
+
+    if (relationErr) {
+      toast('Client created, but connection failed.', 'warn');
+      console.error(relationErr);
+      return;
+    }
+  }
+
+  // ----------------------------------------------------------
+  // Create subscription
+  // ----------------------------------------------------------
+  const subPayload = {
+    instructor_id: currentUser.id,
+    client_id: clientId,
+    service_id: WA.serviceId,
+
+    rate: WA.rate,
+    billing_type: WA.type,
+
+    total_sessions: WA.sessions,
+    completed_sessions: 0,
+
+    start_date: WA.start,
+    end_date: WA.end,
+
+    schedule: [...WA.days],
+    session_time: WA.time,
+
+    auto_checkin: WA.auto,
+
+    payment_status: WA.pay,
+
+    status: WA.draft ? 'draft' : 'active',
+
+    notes: WA.note
+      ? [{ date: todayISO(), text: WA.note }]
+      : []
+  };
+
+  const {
+    data: subData,
+    error: subErr
+  } = await supabaseClient
+    .from('subscriptions')
+    .insert([subPayload])
+    .select()
+    .single();
+
+  if (subErr) {
+    toast('Failed to create subscription', 'warn');
+    console.error(subErr);
+    return;
+  }
+
+  // ----------------------------------------------------------
+  // Payment records
+  // ----------------------------------------------------------
+  const total = WA.rate ? WA.rate * WA.sessions : 0;
+  const paymentsToInsert = [];
+
+  if (total && WA.pay === 'Paid') {
+    paymentsToInsert.push({
+      subscription_id: subData.id,
+      amount: total,
+      method: 'Bank transfer',
+      status: 'Paid',
+      date: todayISO()
+    });
+
+  } else if (total && WA.pay === 'Partial') {
+
+    paymentsToInsert.push({
+      subscription_id: subData.id,
+      amount: Math.round(total / 2),
+      method: 'Bank transfer',
+      status: 'Paid',
+      date: todayISO()
+    });
+
+    paymentsToInsert.push({
+      subscription_id: subData.id,
+      amount: Math.ceil(total / 2),
+      method: 'Pending',
+      status: 'Pending',
+      date: addDays(todayISO(), 14)
+    });
+
+  } else if (total) {
+
+    paymentsToInsert.push({
+      subscription_id: subData.id,
+      amount: total,
+      method: 'Pending',
+      status: 'Pending',
+      date: WA.start
+    });
+  }
+
+  if (paymentsToInsert.length) {
+    const { error: paymentErr } =
+      await supabaseClient
+        .from('payments')
+        .insert(paymentsToInsert);
+
+    if (paymentErr) {
+      console.error('Payment creation error:', paymentErr);
+    }
+  }
+
+  // ----------------------------------------------------------
+  // CREATE SCHEDULED SESSIONS
+  // ----------------------------------------------------------
+  //
+  // Important:
+  // We create the scheduled session NOW.
+  //
+  // Later:
+  // scheduled → checked_in → completed
+  //
+  // Auto-check-in will UPDATE this row rather than creating
+  // another session.
+  // ----------------------------------------------------------
+
+  const sessionsToInsert = [];
+
+  if (!WA.draft) {
+
+    let sessionCount = 0;
+
+    const currentDate =
+      new Date(WA.start + 'T12:00:00');
+
+    const endDate =
+      new Date(WA.end + 'T12:00:00');
+
+    while (
+      sessionCount < WA.sessions &&
+      currentDate <= endDate
+    ) {
+
+      const dayName =
+        DAY[currentDate.getDay()];
+
+      if (WA.days.has(dayName)) {
+
+        // Build the actual scheduled timestamp.
+        const [hours, minutes] =
+          (WA.time || '09:00')
+            .split(':')
+            .map(Number);
+
+        const scheduledDate =
+          new Date(currentDate);
+
+        scheduledDate.setHours(
+          hours,
+          minutes,
+          0,
+          0
+        );
+
+        sessionsToInsert.push({
+          subscription_id: subData.id,
+          instructor_id: currentUser.id,
+          client_id: clientId,
+
+          session_number: sessionCount + 1,
+
+          scheduled_at:
+            scheduledDate.toISOString(),
+
+          status: 'scheduled',
+
+          auto_checkin: WA.auto
+        });
+
+        sessionCount++;
+      }
+
+      currentDate.setDate(
+        currentDate.getDate() + 1
+      );
+    }
+  }
+
+  if (sessionsToInsert.length) {
+
+    const {
+      error: sessionErr
+    } = await supabaseClient
+      .from('sessions')
+      .insert(sessionsToInsert);
+
+    if (sessionErr) {
+      console.error(
+        'Session creation error:',
+        sessionErr
+      );
+
+      toast(
+        'Subscription created, but sessions could not be scheduled.',
+        'warn'
+      );
+
+      closeModal();
+      await loadAllDashboardData();
+      openDetail(subData.id);
+      return;
+    }
+  }
+
+  closeModal();
+
+  await loadAllDashboardData();
+
+  openDetail(subData.id);
+
+  toast(
+    WA.draft
+      ? 'Draft saved — activate it whenever the client is ready.'
+      : '✓ Subscription created successfully.',
+    'ok'
+  );
+}
+
+async function updateSubscription() {
+  const subId = WA.editingSubId;
+
+  if (!subId) {
+    toast('Subscription ID is missing.', 'warn');
+    return;
+  }
+
+  const sub = getSub(subId);
+
+  if (!sub) {
+    toast('Subscription not found.', 'warn');
+    return;
+  }
+
+  /*
+   * Read the final values from Step 3.
+   */
+  const rate =
+    $('#wzRate').value
+      ? Number($('#wzRate').value)
+      : null;
+
+  const type =
+    $('#wzType').value;
+
+  const sessions =
+    Math.max(
+      1,
+      Number($('#wzSessions').value || 1)
+    );
+
+  const paymentStatus =
+    $('#wzPay').value;
+
+  const start =
+    $('#wzStart').value;
+
+  const end =
+    $('#wzEnd').value || null;
+
+  const time =
+    $('#wzTime').value || null;
+
+  const auto =
+    $('#wzAuto').checked;
+
+  const note =
+    $('#wzNote').value.trim();
+
+  const draft =
+    $('#wzDraft').checked;
+
+  const schedule =
+    [...WA.days];
+
+  if (!WA.serviceId) {
+    toast('Pick a service.', 'warn');
+    return;
+  }
+
+  if (!start) {
+    toast('Start date is required.', 'warn');
+    return;
+  }
+
+  if (end && end < start) {
+    toast('End date must be after the start date.', 'warn');
+    return;
+  }
+
+  if (!schedule.length) {
+    toast('Pick at least one training day.', 'warn');
+    return;
+  }
+
+  /*
+   * Keep existing notes and append the new note.
+   */
+  const existingNotes =
+    Array.isArray(sub.notes)
+      ? sub.notes
+      : [];
+
+  let notes = existingNotes;
+
+  if (note) {
+    notes = [
+      ...existingNotes,
+      {
+        date: todayISO(),
+        text: note
+      }
+    ];
+  }
+
+  /*
+   * Preserve the current status unless the user
+   * is editing a draft and explicitly changes it.
+   */
+  let newStatus = sub.status;
+
+  if (sub.status === 'draft') {
+    newStatus = draft
+      ? 'draft'
+      : 'active';
+  }
+
+  /*
+   * Update ONLY columns that actually exist
+   * in your subscriptions table.
+   */
+  const updatePayload = {
+    service_id: WA.serviceId,
+
+    rate: rate,
+
+    billing_type: type,
+
+    total_sessions: sessions,
+
+    start_date: start,
+
+    end_date: end,
+
+    schedule: schedule,
+
+    session_time: time,
+
+    auto_checkin: auto,
+
+    payment_status: paymentStatus,
+
+    status: newStatus,
+
+    notes: notes,
+
+    updated_at: new Date().toISOString()
+  };
+
+  console.log(
+    'Updating subscription:',
+    subId,
+    updatePayload
+  );
+
+  const {
+    error
+  } = await supabaseClient
+    .from('subscriptions')
+    .update(updatePayload)
+    .eq('id', subId);
+
+  if (error) {
+    console.error(
+      'Update subscription error:',
+      error
+    );
+
+    toast(
+      `Failed to update assignment: ${error.message}`,
+      'warn'
+    );
+
+    return;
+  }
+
+  /*
+   * Update FUTURE scheduled sessions only.
+   *
+   * Completed and checked-in sessions are left alone.
+   */
+  const {
+    error: sessionError
+  } = await updateFutureScheduledSessions(
+    sub,
+    {
+      serviceId: WA.serviceId,
+      start,
+      end,
+      schedule,
+      time,
+      auto,
+      sessions
+    }
+  );
+
+  if (sessionError) {
+    console.error(
+      'Future session update error:',
+      sessionError
+    );
+
+    toast(
+      'Assignment saved, but future sessions could not be updated.',
+      'warn'
+    );
+  }
+
+  closeModal();
+
+  await loadAllDashboardData();
+
+  openDetail(subId);
+
+  toast(
+    'Assigned service updated successfully.',
+    'ok'
+  );
+}
+
+async function updateFutureScheduledSessions(sub, changes) {
+  const today = todayISO();
+
+  /*
+   * Get only sessions that have not started yet.
+   *
+   * We deliberately do NOT modify:
+   * - completed sessions
+   * - checked-in sessions
+   */
+  const futureSessions =
+    (sub.sessions || []).filter(session => {
+      if (session.status !== 'scheduled') {
+        return false;
+      }
+
+      if (!session.scheduledAt) {
+        return false;
+      }
+
+      const sessionDate =
+        new Date(session.scheduledAt);
+
+      return sessionDate >= new Date(today + 'T00:00:00');
+    });
+
+  /*
+   * If there are no future sessions,
+   * the subscription itself is still updated successfully.
+   */
+  if (!futureSessions.length) {
+    return { error: null };
+  }
+
+  const updateResults = [];
+
+  for (const session of futureSessions) {
+    const currentDate =
+      new Date(session.scheduledAt);
+
+    /*
+     * Preserve the original date unless
+     * the new start/end window excludes it.
+     */
+    const dateISO =
+      currentDate.toISOString().slice(0, 10);
+
+    const dayName =
+      DAY[currentDate.getDay()];
+
+    /*
+     * If the existing scheduled date is no longer
+     * one of the selected training days, leave it
+     * for now rather than deleting session history.
+     *
+     * The subscription itself is already updated.
+     */
+    if (!changes.schedule.includes(dayName)) {
+      continue;
+    }
+
+    const [hours, minutes] =
+      (changes.time || '09:00')
+        .split(':')
+        .map(Number);
+
+    const newScheduled =
+      new Date(dateISO + 'T12:00:00');
+
+    newScheduled.setHours(
+      hours,
+      minutes,
+      0,
+      0
+    );
+
+    /*
+     * Respect the new date window.
+     */
+    if (
+      changes.start &&
+      dateISO < changes.start
+    ) {
+      continue;
+    }
+
+    if (
+      changes.end &&
+      dateISO > changes.end
+    ) {
+      continue;
+    }
+
+    const {
+      error
+    } = await supabaseClient
+      .from('sessions')
+      .update({
+        scheduled_at:
+          newScheduled.toISOString(),
+
+        auto_checkin:
+          changes.auto,
+
+        updated_at:
+          new Date().toISOString()
+      })
+      .eq('id', session.id)
+      .eq('subscription_id', sub.id)
+      .eq('status', 'scheduled');
+
+    if (error) {
+      updateResults.push(error);
+    }
+  }
+
+  return {
+    error: updateResults.length
+      ? updateResults[0]
+      : null
+  };
+}
+
+/* ---------------- 9. SERVICE & PROFILE MODALS ---------------- */
+function openServiceForm(id) {
+  const s = id ? getService(id) : null;
+  openModal(`
+    <header><h3>${s ? 'Edit Service' : 'Add Service'}</h3><button class="iconBtn" onclick="closeModal()">✕</button></header>
+    <div class="mBody">
+      <label>Service name<input id="svName" type="text" value="${esc(s?.name || '')}" placeholder="e.g. Yoga — Private Session"></label>
+      <label>Description<textarea id="svDesc" rows="3" placeholder="What does the client get?">${esc(s?.desc || '')}</textarea></label>
+      <div class="fRow">
+        <label>Service rate (optional)<div class="money"><span>₦</span><input id="svRate" type="number" min="0" value="${s?.rate ?? ''}" placeholder="0.00"></div></label>
+        <label>Per<select id="svUnit">${['/ session', '/ person', '/ month', '/ block'].map(u => `<option ${s?.unit === u ? 'selected' : ''}>${u}</option>`).join('')}</select></label>
+      </div>
+      <fieldset class="visPick"><legend>Service Visibility</legend>
+        <label class="pick ${(s?.visibility ?? 'public') === 'public' ? 'on' : ''}"><input type="radio" name="svVis" value="public" ${(s?.visibility ?? 'public') === 'public' ? 'checked' : ''}><b>● Public</b><small>Visible on your profile & booking page</small></label>
+        <label class="pick ${s?.visibility === 'private' ? 'on' : ''}"><input type="radio" name="svVis" value="private" ${s?.visibility === 'private' ? 'checked' : ''}><b>🔒 Private</b><small>Hidden — only you can assign it</small></label>
+      </fieldset>
+    </div>
+    <footer><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-pine" onclick="saveService('${id || ''}')">Save Service</button></footer>
+  `);
+  $$('#modalBox .pick input').forEach(r => r.addEventListener('change', () => { $$('#modalBox .pick').forEach(p => p.classList.remove('on')); r.closest('.pick').classList.add('on'); }));
+}
+
+async function saveService(id) {
+  const name = $('#svName').value.trim();
+  if (!name) return toast('Give the service a name.', 'warn');
+  const data = { instructor_id: currentUser.id, name, description: $('#svDesc').value.trim(), rate: +$('#svRate').value || null, unit: $('#svUnit').value, visibility: document.querySelector('#modalBox input[name=svVis]:checked').value, updated_at: new Date().toISOString() };
+  
+  if (id) { delete data.instructor_id; await supabaseClient.from('services').update(data).eq('id', id).eq('instructor_id', currentUser.id); } 
+  else { delete data.updated_at; await supabaseClient.from('services').insert([data]); }
+  
+  closeModal(); await loadServices(); renderServices(); toast('Service saved.', 'ok');
+}
+
+async function archiveService(id, shouldArchive) {
+  await supabaseClient.from('services').update({ archived: shouldArchive }).eq('id', id).eq('instructor_id', currentUser.id);
+  await loadServices(); renderServices(); toast(shouldArchive ? 'Service archived' : 'Service restored', 'ok');
+}
+
+function openProfileEdit() {
+  const I = S.instructor;
+  openModal(`
+    <header><h3>Edit Profile</h3><button class="iconBtn" onclick="closeModal()">✕</button></header>
+    <div class="mBody">
+      <div class="fRow">
+        <label>Display name<input id="pfName" type="text" value="${esc(I.name)}"></label>
+        <label>Username<input id="pfHandle" type="text" value="${esc(I.handle)}"></label>
+      </div>
+      <label>Specialties (comma-separated)<input id="pfSpecs" type="text" value="${esc(I.specs.join(', '))}"></label>
+      <label>Short bio<textarea id="pfBio" rows="3">${esc(I.bio)}</textarea></label>
+      <label>Social links (one per line: Label · handle)<textarea id="pfSocial" rows="3">${I.socials.map(s => s.label + ' · ' + s.handle).join('\n')}</textarea></label>
+    </div>
+    <footer><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-pine" onclick="saveProfile()">Save profile</button></footer>
+  `);
+}
+
+async function saveProfile() {
+  const I = S.instructor;
+  const newName = $('#pfName').value.trim() || I.name;
+  const newHandle = $('#pfHandle').value.trim().replace(/^@/, '') || I.handle;
+  const newSpecs = $('#pfSpecs').value.split(',').map(s => s.trim()).filter(Boolean);
+  const newBio = $('#pfBio').value.trim();
+  const newSocials = $('#pfSocial').value.split('\n').map(l => { const [label, ...h] = l.split('·'); return label && h.length ? { label: label.trim(), handle: h.join('·').trim() } : null; }).filter(Boolean);
+
+  await supabaseClient.from('profiles').update({ full_name: newName, username: newHandle, preferred_channel: newSpecs[0] }).eq('id', currentUser.id);
+  await supabaseClient.from('instructor_profiles').update({ bio: newBio }).eq('id', currentUser.id);
+  
+  I.name = newName; I.handle = newHandle; I.specs = newSpecs; I.bio = newBio; I.socials = newSocials;
+  closeModal(); renderAll(); toast('Profile updated.', 'ok');
+}
+
+function getOriginBase(){
+  return window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+}
+function makeQR(text){
+  // simple QR via api or canvas placeholder - uses qr code api
+  const enc = encodeURIComponent(text);
+  return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${enc}`;
+}
+
+function openShare() {
+  const origin = window.location.origin;
+  const basePath = window.location.pathname.replace(/instructor\.html$/, '');
+  const handle = S.instructor.handle || currentUser.id.slice(0,8);
+  const publicId = (S.instructor.handle && S.instructor.handle !== 'coach') ? S.instructor.handle : currentUser.id;
+  // Real production link - works with clients.html that can open instructor by ?coach= or ?instructor=
+  const link = `${origin}${basePath}clients.html?coach=${encodeURIComponent(publicId)}`;
+  const directLink = `${origin}${basePath}coach/${encodeURIComponent(publicId)}`;
+  const profileUrl = `https://${S.instructor.profileUrl}`;
+  
+  openModal(`<header><h3>Share Profile</h3><button class="iconBtn" onclick="closeModal()">✕</button></header>
+    <div class="mBody">
+      <p style="font-size:13.5px;color:var(--mut);line-height:1.5">Anyone with this link can view your public profile and book your services. Link is live and updates when you edit your profile.</p>
+      <div class="linkBox"><span class="lk">${esc(link)}</span><button class="btn btn-pine" data-act="copy" data-copy="${esc(link)}">Copy</button></div>
+      <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="window.open('https://wa.me/?text=${encodeURIComponent('Check my coaching profile: '+link)}','_blank')">WhatsApp</button>
+        <button class="btn btn-ghost btn-sm" onclick="window.open('mailto:?subject=${encodeURIComponent(S.instructor.name+' — Coaching Profile')}&body=${encodeURIComponent(link)}','_blank')">Email</button>
+        <button class="btn btn-ghost btn-sm" onclick="if(navigator.share){navigator.share({title:'My Coaching Profile',url:'${esc(link)}'})}else{ navigator.clipboard.writeText('${esc(link)}'); toast('Link copied!','ok') }">Share…</button>
+      </div>
+      <div style="display:flex;gap:16px;align-items:center;margin-top:14px;padding:12px;background:var(--paper);border:1px solid var(--line);border-radius:12px">
+        <img src="${makeQR(link)}" width="90" height="90" style="border-radius:8px" alt="QR"/>
+        <div style="font-size:12.5px;color:var(--mut);line-height:1.5"><b style="color:var(--ink)">QR Code</b><br/>Clients can scan to open your profile instantly. Works offline after first open.<br/><small class="mono">${esc(publicId)}</small></div>
+      </div>
+      <div style="margin-top:12px;font-size:11.5px;color:var(--mut)">Direct URL: <span class="mono">${esc(profileUrl)}</span> · Also: <span class="mono">${esc(directLink)}</span></div>
+    </div>
+    <footer><button class="btn btn-ghost" onclick="closeModal()">Done</button><button class="btn btn-pine" data-act="copy" data-copy="${esc(link)}">Copy Link</button></footer>`);
+}
+
+async function openRefer() {
+  const origin = window.location.origin;
+  const basePath = window.location.pathname.replace(/instructor\.html$/, '');
+  const refCode = (S.instructor.handle || 'coach').toLowerCase() + '-' + currentUser.id.slice(0,6);
+  const link = `${origin}${basePath}auth.html?ref=${encodeURIComponent(currentUser.id)}&code=${encodeURIComponent(refCode)}&type=instructor`;
+  
+  // Try to store referral code in instructor_profiles
+  try{
+    await supabaseClient.from('instructor_profiles').upsert({ id: currentUser.id, referral_code: refCode, referral_link: link, updated_at: new Date().toISOString() }, { onConflict:'id' });
+  }catch(e){ console.warn('referral save skipped', e.message); }
+  
+  // Try to create referrals table entry
+  try{
+    await supabaseClient.from('referrals').insert([{ referrer_id: currentUser.id, code: refCode, type: 'instructor', link: link, created_at: new Date().toISOString() }]);
+  }catch(e){ /* table may not exist - ok */ }
+
+  openModal(`<header><h3>Refer Instructor</h3><button class="iconBtn" onclick="closeModal()">✕</button></header>
+    <div class="mBody">
+      <p style="font-size:13.5px;color:var(--mut);line-height:1.5">Earn when another instructor joins using your link. They'll be linked as your referral.</p>
+      <div class="linkBox"><span class="lk">${esc(link)}</span><button class="btn btn-gold" data-act="copy" data-copy="${esc(link)}">Copy link</button></div>
+      <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="window.open('https://wa.me/?text=${encodeURIComponent('Join me as an instructor: '+link)}','_blank')">WhatsApp</button>
+        <button class="btn btn-ghost btn-sm" onclick="window.open('mailto:?subject=${encodeURIComponent('Instructor Referral — '+S.instructor.name)}&body=${encodeURIComponent(link)}','_blank')">Email</button>
+      </div>
+      <div style="margin-top:12px;padding:10px 12px;background:var(--amber-bg);border-radius:10px;font-size:12.5px">Your code: <b class="mono">${esc(refCode.toUpperCase())}</b> · Share this code directly too.</div>
+      <div style="margin-top:12px;display:flex;gap:12px;align-items:center"><img src="${makeQR(link)}" width="80" height="80" style="border-radius:8px"/><small style="color:var(--mut)">Scan to join via your referral</small></div>
+    </div>
+    <footer><button class="btn btn-ghost" onclick="closeModal()">Done</button></footer>`);
+}
+
+async function openConnect() {
+  const origin = window.location.origin;
+  const basePath = window.location.pathname.replace(/instructor\.html$/, '');
+  const code = (S.instructor.handle.slice(0,4).toUpperCase() + '-' + Math.random().toString(36).slice(2,8).toUpperCase()).slice(0,12);
+  const expiresAt = new Date(Date.now()+7*864e5).toISOString();
+  const link = `${origin}${basePath}auth.html?invite=${encodeURIComponent(code)}&instructor=${encodeURIComponent(currentUser.id)}&type=client`;
+  
+  // Try to persist invite in DB (client_invites table, fallback to instructor_clients pending with notes)
+  try{
+    await supabaseClient.from('client_invites').insert([{ code: code, instructor_id: currentUser.id, link: link, expires_at: expiresAt, status: 'active', created_at: new Date().toISOString() }]);
+  }catch(e){
+    try{
+      // fallback: store as a pending connection placeholder with code in notes if table doesn't exist
+      await supabaseClient.from('instructor_clients').insert([{ instructor_id: currentUser.id, client_id: currentUser.id, status: 'invite', code: code }]);
+    }catch(e2){ console.warn('invite storage fallback failed', e2.message); }
+  }
+  
+  // Also save locally for quick lookup
+  try{
+    const inv = JSON.parse(localStorage.getItem('coach_invites')||'[]');
+    inv.unshift({ code, link, instructor: currentUser.id, created: new Date().toISOString(), expires: expiresAt });
+    localStorage.setItem('coach_invites', JSON.stringify(inv.slice(0,20)));
+  }catch(e){}
+
+  openModal(`<header><h3>Connect Client</h3><button class="iconBtn" onclick="closeModal()">✕</button></header>
+    <div class="mBody">
+      <p style="font-size:13.5px;color:var(--mut);line-height:1.5">Send this link to a client — when they sign up or log in, they'll auto-connect to your roster.</p>
+      <div class="linkBox"><span class="lk">${esc(link)}</span><button class="btn btn-pine" data-act="copy" data-copy="${esc(link)}">Copy link</button></div>
+      
+      <div style="margin:14px 0">
+        <label style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)">Send via email</label>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <input id="inviteEmail" type="email" placeholder="client@email.com" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper)"/>
+          <button class="btn btn-pine" onclick="sendClientInvite('${esc(code)}','${esc(link)}')">Send Invite</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="window.open('https://wa.me/?text=${encodeURIComponent('Join my coaching: '+link)}','_blank')">WhatsApp</button>
+        <button class="btn btn-ghost btn-sm" onclick="window.open('sms:?&body=${encodeURIComponent(link)}','_blank')">SMS</button>
+        <button class="btn btn-ghost btn-sm" onclick="window.open('mailto:?subject=${encodeURIComponent('Invitation to train with '+S.instructor.name)}&body=${encodeURIComponent('Hi! Join my coaching here: '+link+'\n\nCode: '+code+'\nExpires: 7 days') }','_blank')">Email App</button>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:center;margin-top:14px;padding:12px;background:var(--paper);border:1px solid var(--line);border-radius:12px">
+        <img src="${makeQR(link)}" width="90" height="90" style="border-radius:8px" alt="QR"/>
+        <div style="font-size:12.5px;color:var(--mut);line-height:1.4"><b style="color:var(--ink)">Code: <span class="mono">${esc(code)}</span></b><br/>Expires: ${esc(new Date(expiresAt).toLocaleDateString())}<br/>Show QR in person — client scans to connect instantly.</div>
+      </div>
+    </div>
+    <footer><button class="btn btn-ghost" onclick="closeModal()">Done</button><button class="btn btn-pine" data-act="copy" data-copy="${esc(link)}">Copy Link</button></footer>`);
+}
+
+async function sendClientInvite(code, link){
+  const email = document.getElementById('inviteEmail')?.value?.trim();
+  if(!email){ toast('Enter client email first','warn'); return; }
+  // Create pending instructor_clients if email matches existing profile, else store invite for later claim
+  try{
+    // Try to find profile by email via profiles table
+    const { data: prof } = await supabaseClient.from('profiles').select('id, full_name').eq('email', email).maybeSingle();
+    if(prof){
+      const { error } = await supabaseClient.from('instructor_clients').upsert({ instructor_id: currentUser.id, client_id: prof.id, status: 'pending', invite_code: code }, { onConflict: 'instructor_id,client_id' });
+      if(error) throw error;
+      toast('Invite sent to '+prof.full_name+' — pending approval','ok');
+      await loadClients(); renderAll();
+    } else {
+      // No profile yet - store invite for claim on signup
+      try{ await supabaseClient.from('client_invites').insert([{ code, instructor_id: currentUser.id, email, link, status:'pending', expires_at: new Date(Date.now()+7*864e5).toISOString() }]); }catch(e){}
+      toast('Invite link ready — send to '+email+' (they will auto-connect on signup)','ok');
+      window.open('mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent('Invitation to train with '+S.instructor.name)+'&body='+encodeURIComponent('Hi!\n\nJoin my coaching here: '+link+'\nCode: '+code+'\nExpires in 7 days'),'_blank');
+    }
+  }catch(e){
+    console.error(e);
+    toast('Could not send directly: '+e.message+' — copy link instead','warn');
+  }
+}
+
+
+/* ---------------- 10. MODAL CONTROLLER ---------------- */
+function openModal(contentHTML, isWide = false) {
+  const box = $('#modalBox');
+  box.className = 'modal' + (isWide ? ' wide' : '');
+  box.innerHTML = contentHTML;
+  $('#overlay').classList.add('open');
+}
+
+function closeModal() {
+  $('#overlay').classList.remove('open');
+  $('#modalBox').innerHTML = '';
+}
+
+/* ---------------- 11. GLOBAL EVENTS & DELEGATION ---------------- */
+function bindGlobalEvents() {
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.svcMenuWrap')) $$('.svcMenu.open').forEach(m => m.classList.remove('open'));
+    if (!e.target.closest('.bellWrap')) $('#bellDD')?.classList.remove('open');
+
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+
+    const act = btn.dataset.act;
+    const id = btn.dataset.id;
+    const sessId = btn.dataset.sessid;
+
+    if (act === 'addService') openServiceForm();
+    if (act === 'svcEdit') { closeModal(); openServiceForm(id); }
+    if (act === 'svcArchive') archiveService(id, true);
+    if (act === 'svcRestore') archiveService(id, false);
+    if (act === 'svcMenu') { e.stopPropagation(); btn.nextElementSibling?.classList.toggle('open'); }
+    if (act === 'assign') openAssign();
+    if (act === 'editSub') openEditSubscription(id);
+    if (act === 'confirm') openConfirm(id, sessId);
+    if (act === 'checkin') checkIn(id);
+    if (act === 'pause') pauseSub(id);
+    if (act === 'resume') resumeSub(id);
+    if (act === 'activate') activateSub(id);
+    if (act === 'undoConfirm') openUndoConfirmModal(id, sessId);
+    if (act === 'undoConfirm') openUndoConfirmModal(id, sessId);
+    if (act === 'completeSub') completeSub(id);
+    if (act === 'cancelSub') cancelSub(id);
+    if (act === 'reactivate') reactivateSub(id);
+    if (act === 'view' || act === 'openSub') openDetail(id);
+    if (act === 'back') showDash();
+    if (act === 'clientView') { view.clientView = !view.clientView; renderDetail(); }
+    if (act === 'shareSub') { const origin = window.location.origin; const basePath = window.location.pathname.replace(/instructor\.html$/, ''); const link = `${origin}${basePath}clients.html?sub=${view.subId}`; navigator.clipboard.writeText(link); toast('Subscription link copied: '+link, 'ok'); }
+    if (act === 'bell') { $('#bellDD')?.classList.toggle('open'); if($('#bellDD')?.classList.contains('open')) setTimeout(() => document.addEventListener('click', closeBellOnce), 0); }
+    if (act === 'copy') { navigator.clipboard.writeText(btn.dataset.copy || ''); toast('Copied to clipboard!', 'ok'); }
+    if (act === 'shareProfile') openShare();
+    if (act === 'referInstructor') openRefer();
+    if (act === 'connectClient') openConnect();
+    if (act === 'editProfile') openProfileEdit();
+    if (act === 'acc') { btn.closest('.acc').classList.toggle('open'); }
+  });
+}
+
+function closeBellOnce(e) {
+  if (!e.target.closest('.bellWrap')) { $('#bellDD')?.classList.remove('open'); document.removeEventListener('click', closeBellOnce); }
+}
+
+async function handleSignOut() {
+  await supabaseClient.auth.signOut();
+  localStorage.clear(); sessionStorage.clear();
+  window.location.href = 'auth.html';
+}
+
+/* ---------------- 12. AUTO CHECK-IN ENGINE ---------------- */
+
+async function tick() {
+
+  if (!currentUser) return;
+
+  const now = new Date();
+  const today = todayISO();
+
+  const changed = [];
+
+  for (const sub of S.subs) {
+
+    // --------------------------------------------------------
+    // Subscription expiration
+    // --------------------------------------------------------
+    if (
+      sub.status === 'active' &&
+      sub.endDate &&
+      sub.endDate < today
+    ) {
+
+      const { error } =
+        await supabaseClient
+          .from('subscriptions')
+          .update({
+            status: 'expired'
+          })
+          .eq('id', sub.id);
+
+      if (!error) {
+        await logActivity(
+          'Subscription expired — ' +
+          clientName(sub) +
+          ' · ' +
+          serviceName(sub)
+        );
+      }
+
+      continue;
+    }
+
+    // --------------------------------------------------------
+    // Subscription already complete
+    // --------------------------------------------------------
+    if (
+      sub.status === 'active' &&
+      sub.totalSessions > 0 &&
+      sub.completed >= sub.totalSessions
+    ) {
+
+      const { error } =
+        await supabaseClient
+          .from('subscriptions')
+          .update({
+            status: 'completed'
+          })
+          .eq('id', sub.id);
+
+      if (!error) {
+        await logActivity(
+          'Subscription completed — ' +
+          clientName(sub)
+        );
+      }
+
+      continue;
+    }
+
+    // --------------------------------------------------------
+    // Only active subscriptions participate in auto check-in.
+    // --------------------------------------------------------
+    if (
+      sub.status !== 'active' ||
+      !sub.auto
+    ) {
+      continue;
+    }
+
+    // --------------------------------------------------------
+    // Find the scheduled session for TODAY.
+    // --------------------------------------------------------
+    const sessionToday =
+      (sub.sessions || []).find(
+        session =>
+          session.date === today &&
+          session.status === 'scheduled'
+      );
+
+    if (!sessionToday) {
+      continue;
+    }
+
+    // --------------------------------------------------------
+    // Don't auto check-in before scheduled time.
+    // --------------------------------------------------------
+    if (!sessionToday.scheduledAt) {
+      continue;
+    }
+
+    if (now.getTime() < sessionToday.scheduledAt) {
+      continue;
+    }
+
+    // --------------------------------------------------------
+    // Check it in.
+    //
+    // IMPORTANT:
+    // We UPDATE the scheduled session.
+    // We do NOT create another session.
+    // --------------------------------------------------------
+    const checkinAt =
+      now.toISOString();
+
+    const { error } =
+      await supabaseClient
+        .from('sessions')
+        .update({
+          status: 'checked_in',
+
+          checkin_at: checkinAt,
+
+          started_at:
+            sessionToday.startedAt
+              ? new Date(
+                  sessionToday.startedAt
+                ).toISOString()
+              : checkinAt,
+
+          auto_checkin: true,
+
+          updated_at: checkinAt
+        })
+        .eq('id', sessionToday.id)
+        .eq('subscription_id', sub.id)
+        .eq('status', 'scheduled');
+
+    if (error) {
+
+      console.error(
+        'Auto check-in error:',
+        error
+      );
+
+      continue;
+    }
+
+    await logActivity(
+      'Auto check-in — ' +
+      clientName(sub) +
+      ' · ' +
+      serviceName(sub) +
+      ' (scheduled ' +
+      sub.time +
+      ')'
+    );
+
+    changed.push({
+      name: clientName(sub),
+      session: sessionToday.n
+    });
+  }
+
+  // ----------------------------------------------------------
+  // Refresh the UI after automatic changes.
+  // ----------------------------------------------------------
+  if (changed.length) {
+
+    await loadAllDashboardData();
+
+    changed.forEach(item => {
+
+      toast(
+        `🕘 Auto check-in — ${item.name} · session #${pad(item.session)}.`,
+        'warn'
+      );
+
+    });
+  }
+}
+/* ---------------- 13. TOAST NOTIFICATIONS ---------------- */
+function toast(msg, type = 'ok') {
+  const container = $('#toasts');
+  if (!container) return;
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span class="tIco">${type === 'ok' ? icoCheck : '!'}</span><span>${esc(msg)}</span>`;
+  container.appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3200);
+}
+</script>
+</body>
+</html>
