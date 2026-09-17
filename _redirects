@@ -1,0 +1,5 @@
+/auth.html /auth.html 200
+/instructor/* /instructor/index.html 200
+/clients/* /clients/index.html 200
+/onboarding.html /onboarding.html 200
+/* /index.html 200

@@ -3396,12 +3396,10 @@ function makeQR(text){
 
 function openShare() {
   const origin = window.location.origin;
-  const basePath = window.location.pathname.replace(/instructor\.html$/, '');
-  const handle = S.instructor.handle || currentUser.id.slice(0,8);
   const publicId = (S.instructor.handle && S.instructor.handle !== 'coach') ? S.instructor.handle : currentUser.id;
-  // Real production link - works with clients.html that can open instructor by ?coach= or ?instructor=
-  const link = `${origin}${basePath}clients.html?coach=${encodeURIComponent(publicId)}`;
-  const directLink = `${origin}${basePath}coach/${encodeURIComponent(publicId)}`;
+  // FIXED: auth at root, clients at /clients/
+  const link = `${origin}/clients/?coach=${encodeURIComponent(publicId)}`;
+  const directLink = `${origin}/clients/coach/${encodeURIComponent(publicId)}`;
   const profileUrl = `https://${S.instructor.profileUrl}`;
   
   openModal(`<header><h3>Share Profile</h3><button class="iconBtn" onclick="closeModal()">✕</button></header>
@@ -3424,9 +3422,8 @@ function openShare() {
 
 async function openRefer() {
   const origin = window.location.origin;
-  const basePath = window.location.pathname.replace(/instructor\.html$/, '');
   const refCode = (S.instructor.handle || 'coach').toLowerCase() + '-' + currentUser.id.slice(0,6);
-  const link = `${origin}${basePath}auth.html?ref=${encodeURIComponent(currentUser.id)}&code=${encodeURIComponent(refCode)}&type=instructor`;
+  const link = `${origin}/auth.html?ref=${encodeURIComponent(currentUser.id)}&code=${encodeURIComponent(refCode)}&type=instructor`;
   
   // Try to store referral code in instructor_profiles
   try{
@@ -3454,10 +3451,9 @@ async function openRefer() {
 
 async function openConnect() {
   const origin = window.location.origin;
-  const basePath = window.location.pathname.replace(/instructor\.html$/, '');
   const code = (S.instructor.handle.slice(0,4).toUpperCase() + '-' + Math.random().toString(36).slice(2,8).toUpperCase()).slice(0,12);
   const expiresAt = new Date(Date.now()+7*864e5).toISOString();
-  const link = `${origin}${basePath}auth.html?invite=${encodeURIComponent(code)}&instructor=${encodeURIComponent(currentUser.id)}&type=client`;
+  const link = `${origin}/auth.html?invite=${encodeURIComponent(code)}&instructor=${encodeURIComponent(currentUser.id)}&type=client`;
   
   // Try to persist invite in DB (client_invites table, fallback to instructor_clients pending with notes)
   try{
@@ -3574,7 +3570,7 @@ function bindGlobalEvents() {
     if (act === 'view' || act === 'openSub') openDetail(id);
     if (act === 'back') showDash();
     if (act === 'clientView') { view.clientView = !view.clientView; renderDetail(); }
-    if (act === 'shareSub') { const origin = window.location.origin; const basePath = window.location.pathname.replace(/instructor\.html$/, ''); const link = `${origin}${basePath}clients.html?sub=${view.subId}`; navigator.clipboard.writeText(link); toast('Subscription link copied: '+link, 'ok'); }
+    if (act === 'shareSub') { const origin = window.location.origin; const basePath = '/instructor/'; const link = `${origin}/clients/?sub=${view.subId}`; navigator.clipboard.writeText(link); toast('Subscription link copied: '+link, 'ok'); }
     if (act === 'bell') { $('#bellDD')?.classList.toggle('open'); if($('#bellDD')?.classList.contains('open')) setTimeout(() => document.addEventListener('click', closeBellOnce), 0); }
     if (act === 'copy') { navigator.clipboard.writeText(btn.dataset.copy || ''); toast('Copied to clipboard!', 'ok'); }
     if (act === 'shareProfile') openShare();
