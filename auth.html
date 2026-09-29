@@ -792,6 +792,25 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 60px var(--panel) inset;-webkit-
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js"></script>
+<script src="/js/connections.js"></script>
+
+<script>
+/* Capture ?invite=CODE into localStorage['straka-invite']. clients/index.html reads this
+   same key and does the actual redemption (redeemPendingInvite, via loadProfile). */
+(function(){
+  var pending = Connections.capture();
+  if (!pending || typeof supabaseClient === 'undefined') return;
+  // Already signed in with a pending invite? Jump to the passport so it redeems there —
+  // but never for an instructor account, since invites are client-only.
+  supabaseClient.auth.getUser().then(function(res){
+    var user = res && res.data && res.data.user;
+    if (!user) return;
+    supabaseClient.from('profiles').select('role').eq('id', user.id).maybeSingle().then(function(r){
+      if (!r.data || r.data.role !== 'instructor') location.replace('clients/index.html');
+    });
+  });
+})();
+</script>
 
 <script>
 (function(){
@@ -972,17 +991,17 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 60px var(--panel) inset;-webkit-
   /* ---------- shared routing after auth ---------- */
   async function routeAfterAuth(userId){
     try{
+      // Invite redemption happens on clients/index.html (redeemPendingInvite, via loadProfile) —
+      // not here, so it also covers OAuth / email-confirm returns without special-casing them.
       const { data: profile } = await supabaseClient
-        .from('profiles')
-        .select('role,onboarding_complete')
-        .eq('id', userId)
-        .single();
+        .from('profiles').select('role,onboarding_complete').eq('id', userId).maybeSingle();
       if(profile && profile.onboarding_complete){
         location.href = profile.role === 'instructor' ? 'instructor/index.html' : 'clients/index.html';
       } else {
         location.href = 'onboarding.html';
       }
     }catch(e){
+      console.error(e);
       location.href = 'onboarding.html';
     }
   }
@@ -1028,7 +1047,20 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 60px var(--panel) inset;-webkit-
   }
   function fail(){ card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); }
 
-  /* ---------- SIGN IN submit ---------- */
+  /* ===== INVITE BADGE (redeeming happens in routeAfterAuth) ===== */
+  const pendingInvite = Connections.getPending();
+  if(pendingInvite){
+    Connections.preview(supabaseClient, pendingInvite.code).then(pv=>{
+      const badge = document.createElement('div');
+      badge.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:9999;padding:8px 14px;border-radius:99px;font:600 11px var(--mono);letter-spacing:.08em;box-shadow:0 8px 24px rgba(0,0,0,.3);color:#06130b;background:'+(pv.valid?'linear-gradient(140deg,#8ff5c6,#5ee6a1)':'#f5b8b8');
+      badge.textContent = pv.valid
+        ? '🔗 INVITED BY ' + (pv.instructor_name||'YOUR INSTRUCTOR').toUpperCase() + ' • SIGN IN OR SIGN UP TO CONNECT'
+        : '⚠ THIS INVITE LINK IS INVALID OR EXPIRED';
+      document.body.appendChild(badge);
+    });
+  }
+
+/* ---------- SIGN IN submit ---------- */
   panes.signin.addEventListener('submit', async e=>{
     e.preventDefault();
     const email = $('#si-email'), pass = $('#si-pass');
@@ -1078,21 +1110,30 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 60px var(--panel) inset;-webkit-
         email: email.value.trim(),
         password: pass.value,
         options: {
-          data: { full_name: name.value.trim() }
+          data: { full_name: name.value.trim() },
+          emailRedirectTo: window.location.origin + '/auth.html'
         }
       });
       if(error) throw error;
 
-      const user = data.user;
-      if(user){
-        const { error: profileError } = await supabaseClient
-          .from('profiles')
-          .insert({ id: user.id, full_name: name.value.trim(), onboarding_complete: false });
-        if(profileError) console.error(profileError);
+      // Email confirmation ON => no session yet. localStorage['straka-invite'] survives on this
+      // device; when they come back and sign in, routeAfterAuth -> clients/index.html redeems it.
+      if(!data.session){
+        toast('Account created — confirm your email, then sign in to finish connecting.');
+        setLoading(btn, false);
+        setTimeout(()=>{ location.href = 'auth.html#signin'; }, 1500);
+        return;
       }
 
-      toast('Account created successfully');
-      setTimeout(()=>{ location.href = 'onboarding.html'; }, 800);
+      // Invited signups are always clients — set the role now so onboarding.html skips
+      // the role-picker step and goes straight to the client profile form.
+      if(pendingInvite){
+        await supabaseClient.from('profiles')
+          .upsert({ id: data.user.id, role: 'client', updated_at: new Date().toISOString() }, { onConflict:'id' });
+      }
+
+      toast(pendingInvite ? 'Account created — connecting…' : 'Account created successfully');
+      setTimeout(()=>routeAfterAuth(data.user.id), 800);
 
     } catch(error){
       console.error('Signup error:', error);
@@ -1167,11 +1208,13 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 60px var(--panel) inset;-webkit-
   $$('[data-google]').forEach(btn=>btn.addEventListener('click', async ()=>{
     setLoading(btn, true, 'Connecting Google…');
     lastBtn = btn;
+    // With an invite we come back to auth.html so the session handler below can redeem it.
+    const redirectTo = Connections.getPending()
+      ? window.location.origin + '/auth.html'
+      : window.location.origin + '/onboarding.html';
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
-      options:{
-        redirectTo: window.location.origin + '/onboarding.html'
-      }
+      options:{ redirectTo }
     });
     if(error){
       console.error('Google login error:', error);

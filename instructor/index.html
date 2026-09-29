@@ -41,6 +41,7 @@ tailwind.config = {
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/supabase.js"></script>
+<script src="/js/connections.js"></script>
 <style>
 /* ============================================================
    STRAKA · INSTRUCTOR CONSOLE · DESIGN SYSTEM v2
@@ -537,6 +538,7 @@ footer.pageFoot button:hover{color:var(--red)}
 </div>
 <div class="board" id="boardCells"></div>
 <div id="pendingWrap"></div>
+<div id="connWrap"></div>
 </section>
 
 <section class="reveal" id="services">
@@ -615,7 +617,7 @@ function appUrl(path, params = {}) {
 
 const buildShareLink  = ()          => appUrl('/clients/',   { coach: profile.full_name || profile.username });
 const buildReferLink  = (code)      => appUrl('/auth.html',  { ref: profile.id, code, type: 'instructor' });
-const buildInviteLink = (code)      => appUrl('/auth.html',  { invite: code, instructor: profile.id, type: 'client' });
+const buildInviteLink = (code)      => appUrl('/auth.html',  { invite: code });
 
 /* ---------------- Application State ---------------- */
 let currentUser = null;
@@ -663,6 +665,9 @@ async function initConsole() {
     if (profError || !profData) { window.location.href = '/auth.html'; return; }
     if (profData.role !== 'instructor' || !profData.onboarding_complete) { window.location.href = '/onboarding.html'; return; }
     
+    loadPendingRequests();
+    subscribeConnections();
+
     profile = profData;
     const { data: instData } = await supabaseClient.from('instructor_profiles').select('*').eq('id', user.id).maybeSingle();
     instructorProfile = instData || {};
@@ -719,13 +724,22 @@ async function loadServices() {
 }
 
 async function loadClients() {
-  const { data, error } = await supabaseClient.from('instructor_clients').select('*, client:client_id(id, full_name, username, phone, avatar_url, created_at)').eq('instructor_id', currentUser.id);
-  if (!error) {
-    S.clients = (data || []).map(rel => {
-      const c = rel.client || {};
-      return { id: c.id || rel.client_id, relationshipId: rel.id, name: c.full_name || c.username || 'Client', phone: c.phone || 'No phone', avatar_url: c.avatar_url || null, since: fmtShort(c.created_at || rel.created_at) };
-    });
+  // Only real connections (not pending/declined). Two queries: no FK/embed dependency.
+  const { data: rels, error } = await supabaseClient
+    .from('instructor_clients').select('id, client_id, status, connected_at, updated_at')
+    .eq('instructor_id', currentUser.id).in('status', ['active', 'paused']);
+  if (error) { console.error('loadClients:', error); return; }
+  const ids = (rels || []).map(r => r.client_id);
+  let byId = {};
+  if (ids.length) {
+    const { data: profs } = await supabaseClient.from('profiles')
+      .select('id, full_name, username, phone, avatar_url, created_at').in('id', ids);
+    byId = Object.fromEntries((profs || []).map(p => [p.id, p]));
   }
+  S.clients = (rels || []).map(rel => {
+    const c = byId[rel.client_id] || {};
+    return { id: rel.client_id, relationshipId: rel.id, status: rel.status, name: c.full_name || c.username || 'Client', phone: c.phone || 'No phone', avatar_url: c.avatar_url || null, since: fmtShort(rel.connected_at || rel.updated_at) };
+  });
 }
 
 async function loadSubscriptions() {
@@ -1110,6 +1124,95 @@ function renderBell() {
       </div>`).join('') : '<div class="bellItem"><span class="txt">All pending actions resolved!</span></div>'}
     <h4>Recent activity</h4>
     <ul class="bellAct">${S.activity.slice(0,6).map(a => `<li>${esc(a.text)}</li>`).join('')}</ul>`;
+}
+
+/* ============ CONNECTION REQUESTS ============ */
+async function loadPendingRequests(){
+  const { data: reqs, error } = await supabaseClient
+    .from('instructor_clients')
+    .select('id, client_id, updated_at')
+    .eq('instructor_id', currentUser.id)
+    .eq('status', 'pending')
+    .order('updated_at', { ascending: true });
+
+  if (error){ console.warn('pending requests:', error.message); return; }
+  S.pendingConnections = reqs || [];
+  if (!reqs.length){ renderPendingRequests([]); return; }
+
+  // Second query avoids PostgREST embed issues (no FK-name assumptions)
+  const { data: profs } = await supabaseClient
+    .from('profiles')
+    .select('id, full_name, username, avatar_url')
+    .in('id', reqs.map(r => r.client_id));
+
+  const byId = Object.fromEntries((profs || []).map(p => [p.id, p]));
+  renderPendingRequests(reqs.map(r => ({ ...r, client: byId[r.client_id] || {} })));
+}
+
+function renderPendingRequests(list){
+  const wrap = document.getElementById('connWrap');
+  if (!wrap) return;
+  if (!list.length){ wrap.innerHTML = ''; updateBellBadge(); return; }
+
+  wrap.innerHTML = `
+  <div class="pendingPanel">
+    <header>
+      <h3>Connection Requests</h3>
+      <span class="mono">${list.length} pending</span>
+    </header>
+    ${list.map(r => {
+      const c = r.client || {};
+      const name = c.full_name || c.username || 'New client';
+      return `
+      <div class="pendRow">
+        <span class="psn">${esc(initials(name))}</span>
+        <span class="who"><b>${esc(name)}</b><small>${c.username ? '@'+esc(c.username) : 'wants to connect with you'}</small></span>
+        <button class="btn btn-pine btn-sm" data-accept="${r.id}">Accept</button>
+        <button class="btn btn-ghost btn-sm" data-decline="${r.id}">Decline</button>
+      </div>`;
+    }).join('')}
+  </div>`;
+  updateBellBadge();
+}
+
+function updateBellBadge(){
+  const b = document.getElementById('bellBadge');
+  if (!b) return;
+  const n = (S.pendingConnections || []).length;
+  b.hidden = n === 0;
+  b.textContent = n;
+}
+
+// Accept / Decline — event delegation survives re-renders
+document.addEventListener('click', async (e) => {
+  const acc = e.target.closest('[data-accept]');
+  const dec = e.target.closest('[data-decline]');
+  if (!acc && !dec) return;
+  const btn = acc || dec;
+  const id = btn.dataset.accept || btn.dataset.decline;
+  const accept = !!acc;
+  btn.disabled = true;
+
+  const { error } = await supabaseClient.rpc('respond_connection_request', {
+    p_request_id: id, p_accept: accept
+  });
+
+  if (error){ btn.disabled = false; toast('Failed: ' + error.message, 'warn'); return; }
+  toast(accept ? 'Client connected 🎉' : 'Request declined', accept ? 'ok' : 'warn');
+  loadPendingRequests();
+  if (typeof renderClients === 'function') renderClients();
+});
+
+// New requests appear without a page refresh
+function subscribeConnections(){
+  if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
+  realtimeChannel = supabaseClient
+    .channel('instructor-clients-' + currentUser.id)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'instructor_clients',
+        filter: 'instructor_id=eq.' + currentUser.id },
+      () => loadPendingRequests())
+    .subscribe();
 }
 
 /* ---------------- 6. DETAIL VIEW RENDERERS ---------------- */
@@ -3478,39 +3581,40 @@ async function openRefer() {
     <footer><button class="btn btn-ghost" onclick="closeModal()">Done</button></footer>`);
 }
 
+function makeInviteCode() {
+  const b = crypto.getRandomValues(new Uint8Array(6));
+  const rnd = Array.from(b, x => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[x % 32]).join('');
+  return (S.instructor.handle || 'COACH').replace(/[^a-z0-9]/gi, '').slice(0, 4).toUpperCase() + '-' + rnd;
+}
+const inviteLink = code => `${window.location.origin}/auth.html?invite=${encodeURIComponent(code)}`;
+
 async function openConnect() {
-  const origin = window.location.origin;
-  const code = (S.instructor.handle.slice(0,4).toUpperCase() + '-' + Math.random().toString(36).slice(2,8).toUpperCase()).slice(0,12);
-  const expiresAt = new Date(Date.now()+7*864e5).toISOString();
-  const link = `${origin}/auth.html?invite=${encodeURIComponent(code)}&instructor=${encodeURIComponent(currentUser.id)}&type=client`;
-  
-  // Try to persist invite in DB (client_invites table, fallback to instructor_clients pending with notes)
-  try{
-    await supabaseClient.from('client_invites').insert([{ code: code, instructor_id: currentUser.id, link: link, expires_at: expiresAt, status: 'active', created_at: new Date().toISOString() }]);
-  }catch(e){
-    try{
-      // fallback: store as a pending connection placeholder with code in notes if table doesn't exist
-      await supabaseClient.from('instructor_clients').insert([{ instructor_id: currentUser.id, client_id: currentUser.id, status: 'invite', code: code }]);
-    }catch(e2){ console.warn('invite storage fallback failed', e2.message); }
+  // Reuse the current shareable (non-email) invite instead of creating a new row on every click
+  let code, expiresAt;
+  const { data: existing } = await supabaseClient.from('client_invites')
+    .select('code, expires_at').eq('instructor_id', currentUser.id).eq('status', 'active').is('email', null)
+    .gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }).limit(1);
+  if (existing && existing.length) {
+    code = existing[0].code; expiresAt = existing[0].expires_at;
+  } else {
+    code = makeInviteCode(); expiresAt = new Date(Date.now() + 7 * 864e5).toISOString();
+    const { error } = await supabaseClient.from('client_invites').insert({
+      code, instructor_id: currentUser.id, link: inviteLink(code), expires_at: expiresAt, status: 'active', max_uses: 25
+    });
+    if (error) { console.error(error); toast('Could not create invite: ' + error.message, 'warn'); return; }
   }
-  
-  // Also save locally for quick lookup
-  try{
-    const inv = JSON.parse(localStorage.getItem('coach_invites')||'[]');
-    inv.unshift({ code, link, instructor: currentUser.id, created: new Date().toISOString(), expires: expiresAt });
-    localStorage.setItem('coach_invites', JSON.stringify(inv.slice(0,20)));
-  }catch(e){}
+  const link = inviteLink(code);
 
   openModal(`<header><h3>Connect Client</h3><button class="iconBtn" onclick="closeModal()">✕</button></header>
     <div class="mBody">
-      <p style="font-size:13.5px;color:var(--mut);line-height:1.5">Send this link to a client — when they sign up or log in, they'll auto-connect to your roster.</p>
+      <p style="font-size:13.5px;color:var(--mut);line-height:1.5">Send this link to a client — when they sign up or sign in with it, they'll auto-connect to your roster.</p>
       <div class="linkBox"><span class="lk">${esc(link)}</span><button class="btn btn-pine" data-act="copy" data-copy="${esc(link)}">Copy link</button></div>
       
       <div style="margin:14px 0">
         <label style="font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)">Send via email</label>
         <div style="display:flex;gap:8px;margin-top:6px">
           <input id="inviteEmail" type="email" placeholder="client@email.com" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper)"/>
-          <button class="btn btn-pine" onclick="sendClientInvite('${esc(code)}','${esc(link)}')">Send Invite</button>
+          <button class="btn btn-pine" onclick="sendClientInvite()">Send Invite</button>
         </div>
       </div>
 
@@ -3528,28 +3632,18 @@ async function openConnect() {
     <footer><button class="btn btn-ghost" onclick="closeModal()">Done</button><button class="btn btn-pine" data-act="copy" data-copy="${esc(link)}">Copy Link</button></footer>`);
 }
 
-async function sendClientInvite(code, link){
-  const email = document.getElementById('inviteEmail')?.value?.trim();
-  if(!email){ toast('Enter client email first','warn'); return; }
-  // Create pending instructor_clients if email matches existing profile, else store invite for later claim
-  try{
-    // Try to find profile by email via profiles table
-    const { data: prof } = await supabaseClient.from('profiles').select('id, full_name').eq('email', email).maybeSingle();
-    if(prof){
-      const { error } = await supabaseClient.from('instructor_clients').upsert({ instructor_id: currentUser.id, client_id: prof.id, status: 'pending', invite_code: code }, { onConflict: 'instructor_id,client_id' });
-      if(error) throw error;
-      toast('Invite sent to '+prof.full_name+' — pending approval','ok');
-      await loadClients(); renderAll();
-    } else {
-      // No profile yet - store invite for claim on signup
-      try{ await supabaseClient.from('client_invites').insert([{ id: crypto.randomUUID(), code, instructor_id: currentUser.id, email, link, status:'pending', expires_at: new Date(Date.now()+7*864e5).toISOString() }]); }catch(e){}
-      toast('Invite link ready — send to '+email+' (they will auto-connect on signup)','ok');
-      window.open('mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent('Invitation to train with '+S.instructor.name)+'&body='+encodeURIComponent('Hi!\n\nJoin my coaching here: '+link+'\nCode: '+code+'\nExpires in 7 days'),'_blank');
-    }
-  }catch(e){
-    console.error(e);
-    toast('Could not send directly: '+e.message+' — copy link instead','warn');
-  }
+async function sendClientInvite() {
+  const email = document.getElementById('inviteEmail')?.value?.trim().toLowerCase();
+  if (!email) { toast('Enter client email first', 'warn'); return; }
+  // One single-use invite locked to this email. Existing OR new accounts redeem it the same way.
+  const code = makeInviteCode(), link = inviteLink(code);
+  const { error } = await supabaseClient.from('client_invites').insert({
+    code, instructor_id: currentUser.id, email, link, status: 'active', max_uses: 1,
+    expires_at: new Date(Date.now() + 7 * 864e5).toISOString()
+  });
+  if (error) { console.error(error); toast('Could not create invite: ' + error.message, 'warn'); return; }
+  toast('Invite ready — your email app will open', 'ok');
+  window.open('mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent('Invitation to train with ' + S.instructor.name) + '&body=' + encodeURIComponent('Hi!\n\nJoin my coaching here: ' + link + '\nCode: ' + code + '\nExpires in 7 days'), '_blank');
 }
 
 

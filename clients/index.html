@@ -15,6 +15,7 @@
 
 <!-- ===== Tailwind (utility layer, themed to Straka tokens) ===== -->
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="/js/connections.js"></script>
 <script>
 tailwind.config = {
   theme: {
@@ -770,6 +771,45 @@ function diag(ok,label,detail){
   else console.error('✗ '+line);
 }
 
+/* ============ CONNECTION LOGIC ============ */
+function flash(icon, title, sub){
+  try{ banner(icon, title, sub || ''); }
+  catch(e){ console.log('[Straka]', title, sub || ''); }
+}
+
+let inviteTried = false;
+
+// A) Auto-connect via invite link — runs once per session, fires from loadProfile()
+async function redeemPendingInvite(){
+  if (inviteTried || !S.uid) return;
+  inviteTried = true;
+
+  let invite = null;
+  try { invite = JSON.parse(localStorage.getItem('straka-invite') || 'null'); } catch(e){}
+  if (!invite || !invite.code) return;
+
+  const { error } = await sb.rpc('redeem_client_invite', { p_code: invite.code });
+
+  if (error){
+    diag(false, 'Invite redemption', error.message);
+    // Dead invite → stop retrying on future page loads
+    if (/no longer active|expired|Invalid|different email|cannot connect/i.test(error.message)){
+      localStorage.removeItem('straka-invite');
+    }
+    if (/does not exist/i.test(error.message)){
+      console.error('✗ Server function missing — run the connection-fix SQL in Supabase (redeem_client_invite).');
+    }
+    return;
+  }
+
+  localStorage.removeItem('straka-invite');
+  flash('🎉','Connected!','You’re now connected with your instructor.');
+  await loadConnections();      // pull the new active connection
+  rehydrateInstructors();       // re-hydrate instructor cards with connection state
+  updateBadges();
+  if (S.ready) render(cur.name, cur.param);
+}
+
 /* ---------- data accessors ---------- */
 function subById(id){ return S.subscriptions.find(x=>x.id===id)||null; }
 function svcNameOfSub(sub){ const s=sub&&S.servicesById.get(sub.service_id); return s? s.name : 'Training program'; }
@@ -976,6 +1016,7 @@ async function loadProfile(){
   delete S.errors.profile;
   S.profile=data;
   diag(!!data,'Client profile loaded', data? '' : 'no profiles row for this user');
+  redeemPendingInvite();   // ← ADD THIS LINE (fire-and-forget, doesn't slow boot)
 }
 async function loadClientProfile(){
   const { data, error } = await sb.from('client_profiles').select('*').eq('id',S.uid).maybeSingle();
@@ -1235,25 +1276,39 @@ async function setupRealtime(){
    ACTIONS
 ============================================================ */
 async function actConnect(instId){
-  const existing=connFor(instId);
-  let error=null;
-  if(existing){
-    if(existing.status==='pending'){ banner('⏳','Already requested','Your connection request is awaiting approval.'); return; }
-    const res=await sb.from('instructor_clients').update({status:'pending'}).eq('id',existing.id);
-    error=res.error;
-  } else {
-    const res=await sb.from('instructor_clients')
-      .insert({ instructor_id:instId, client_id:S.uid, status:'pending' });  /* 'pending' is a valid schema status — never 'connected' */
-    error=res.error;
-  }
-  if(error){
-    console.error('✗ Connection request failed:',error.message);
-    banner('⚠️','Could not send request',error.message);
+  const existing = connFor(instId);
+
+  if (existing && existing.status === 'pending'){
+    banner('⏳','Already requested','Your connection request is awaiting approval.');
     return;
   }
+  if (existing && existing.status === 'active'){
+    banner('✓','Already connected','You’re connected with this instructor.');
+    return;
+  }
+  if (existing && existing.status === 'paused'){
+    banner('⏸️','Connection paused','Your instructor has paused this connection.');
+    return;
+  }
+
+  // New request, or re-request after 'ended'.
+  // Atomic RPC — bypasses the RLS insert policy and notifies the instructor.
+  const { error } = await sb.rpc('request_instructor_connection', { p_instructor_id: instId });
+
+  if (error){
+    console.error('✗ Connection request failed:', error.message);
+    if (/does not exist/i.test(error.message)){
+      console.error('✗ Run the connection-fix SQL in Supabase first (request_instructor_connection).');
+      banner('⚠️','Could not send request','Server function missing — run the connection-fix SQL.');
+    } else {
+      banner('⚠️','Could not send request', error.message);
+    }
+    return;
+  }
+
   console.log('%c✓ Connection request sent (instructor_clients.status = pending)','color:#1E7A4F');
-  banner('<svg class="hi hi-lg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.392 0-4.611-.46-6.635-1.28a4.9 4.9 0 01-.028-.02 3 3 0 004.682-2.72A9.094 9.094 0 0112 18c.74 0 1.458.084 2.147.24M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/></svg>','Request sent','The instructor will approve your connection.');
-  await refresh(['connections'],false);
+  banner('🔗','Request sent','The instructor will approve your connection.');
+  await refresh(['connections'], false);
 }
 async function sendMsg(them){
   const inp=$('#msgInput'); if(!inp) return;
@@ -1751,7 +1806,6 @@ async function saveProfileEdits(){
     phone: ($('#edit_phone')?.value||'').trim() || null,
     location: ($('#edit_location')?.value||'').trim() || null,
     avatar_url: ($('#edit_avatar_url')?.value||'').trim() || null,
-    bio: ($('#edit_bio')?.value||'').trim() || null,
     updated_at: new Date().toISOString()
   };
   // remove empty
@@ -1759,7 +1813,10 @@ async function saveProfileEdits(){
   try{
     const { error } = await sb.from('profiles').update(updates).eq('id', S.uid);
     if(error) throw error;
-    // also try client_profiles for experience/goal if present
+    // NOTE: neither 'profiles' nor 'client_profiles' has a 'bio' column in your schema —
+    // there's currently nowhere to save it, so the #edit_bio field is not persisted.
+    // Add a `bio text` column to client_profiles (see connections.sql) to enable this, then
+    // set cpUpdates.bio = ($('#edit_bio')?.value||'').trim() || null below.
     try{
       const cpUpdates={};
       const exp=$('#edit_experience')?.value;
@@ -2035,25 +2092,12 @@ async function init(){
       const coachParam = params.get('coach') || params.get('instructor') || params.get('c');
       const subParam = params.get('sub') || params.get('subscription');
       const inviteCode = params.get('invite');
-      const instructorId = params.get('instructor_id') || params.get('instructor');
       const ref = params.get('ref');
 
-      if(inviteCode && instructorId){
-        // Auto-connect flow for client invite
-        localStorage.setItem('pending_invite', JSON.stringify({ code: inviteCode, instructor_id: instructorId, at: new Date().toISOString() }));
-        // Try to auto-create connection if already logged in
-        setTimeout(async ()=>{
-          try{
-            const { data: existing } = await sb.from('instructor_clients').select('id').eq('instructor_id', instructorId).eq('client_id', S.uid).maybeSingle();
-            if(!existing){
-              await sb.from('instructor_clients').insert({ instructor_id: instructorId, client_id: S.uid, status: 'pending', invite_code: inviteCode });
-              banner('<svg class="hi hi-lg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.392 0-4.611-.46-6.635-1.28a4.9 4.9 0 01-.028-.02 3 3 0 004.682-2.72A9.094 9.094 0 0112 18c.74 0 1.458.084 2.147.24M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/></svg>','Invite accepted','You are now connected to your coach — pending approval');
-              await loadConnections(); await loadInstructors(); updateBadges(); show('myinst', null, true);
-            } else {
-              show('myinst', null, true);
-            }
-          }catch(e){ console.warn('invite auto-connect failed', e); show('subs',null,true); }
-        }, 800);
+      if(inviteCode){
+        // The actual redemption already ran in redeemPendingInvite() (fired from loadProfile(),
+        // reading the code auth.html stored in localStorage['straka-invite']). Just land here.
+        show('myinst', null, true);
       } else if(coachParam){
         // Open instructor profile by handle or id
         const found = [...S.instructors.values()].find(i=> i.id===coachParam || i.username===coachParam || (i.full_name&&i.full_name.toLowerCase().replace(/\s+/g,'-')===coachParam.toLowerCase()));
