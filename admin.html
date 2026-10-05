@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Straka — Admin</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='none' stroke='%230E3B2E' stroke-width='14' stroke-dasharray='180 60' stroke-linecap='round'/><circle cx='50' cy='50' r='12' fill='%23EFA51C'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/supabase.js"></script>
+<style>
+:root{--bg:#ECF0E6;--paper:#FBFCF8;--ink:#132A21;--mut:#5C6E63;--pine:#0E3B2E;--pine2:#0A2A21;--pine3:#135141;--line:rgba(19,40,31,.14);--line2:rgba(19,40,31,.08);--gold:#EFA51C;--gold2:#D98E0F;--gold-hi:#F7C766;--gold-ink:#7A4E00;--ok:#1F8A5B;--ok-bg:#E2F1E7;--red:#BF4229;--red-bg:#F7E5E0;--disp:'Bricolage Grotesque',system-ui,sans-serif;--body:'Instrument Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
+*{margin:0;padding:0;box-sizing:border-box}button{font-family:inherit;cursor:pointer}
+body{font:15px/1.5 var(--body);color:var(--ink);background:var(--bg);min-height:100vh;padding:34px 20px}
+.wrap{max-width:1060px;margin:0 auto}
+h1{font:800 30px var(--disp);letter-spacing:-.02em}.sub{color:var(--mut);font-size:13.5px;margin:4px 0 24px}
+.tabs{display:flex;gap:8px;margin-bottom:18px}
+.tab{padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--paper);font:600 13px var(--body);color:var(--mut)}
+.tab.on{background:linear-gradient(180deg,var(--pine3),var(--pine));color:#F3F7EF;border-color:var(--pine)}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(13,37,29,.06),0 8px 24px -14px rgba(13,37,29,.18);overflow:hidden;margin-bottom:18px}
+.pHead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line2);font:700 15px var(--disp)}
+.pHead .btn{margin-left:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mut);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line2)}
+td{padding:9px 12px;border-bottom:1px solid var(--line2);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+input[type=text],input[type=number],select,textarea{border:1px solid var(--line);border-radius:8px;padding:7px 9px;font:400 13px var(--body);background:#fff;outline:none;width:100%;min-width:70px}
+input:focus,select:focus,textarea:focus{border-color:var(--pine)}
+.btn{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--body);padding:8px 14px;border-radius:9px;border:1px solid transparent;text-decoration:none}
+.btn-pine{background:linear-gradient(180deg,var(--pine3),var(--pine));color:#F3F7EF}
+.btn-ghost{background:none;border-color:rgba(19,40,31,.28);color:var(--ink)}
+.btn-danger{background:none;border-color:rgba(191,66,41,.4);color:var(--red)}
+.btn-sm{padding:6px 10px;font-size:12px}
+.chip{font:600 10px var(--mono);text-transform:uppercase;letter-spacing:.08em;padding:4px 9px;border-radius:99px}
+.chip.on{background:var(--ok-bg);color:var(--ok)}.chip.off{background:var(--red-bg);color:var(--red)}
+.locked{padding:60px 20px;text-align:center;color:var(--mut)}
+.switch{position:relative;width:38px;height:22px;flex:none;display:inline-block}
+.switch input{display:none}
+.switch i{position:absolute;inset:0;background:rgba(19,40,31,.2);border-radius:99px;transition:.2s;cursor:pointer}
+.switch i::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:99px;background:#fff;transition:.2s}
+.switch input:checked+i{background:var(--ok)}
+.switch input:checked+i::after{left:19px}
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:99}
+.toast{background:rgba(10,42,33,.94);color:#F2F6EF;border-radius:12px;padding:11px 15px;font-size:13px;border-left:4px solid var(--gold)}
+.toast.ok{border-left-color:#3FBF82}
+@media(max-width:760px){.scrollX{overflow-x:auto}table{min-width:640px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Straka Admin</h1>
+<p class="sub">Tiers, pricing and instructor access. Changes apply to the instructor console instantly.</p>
+<div class="tabs"><button class="tab on" data-tab="tiers">Tiers &amp; pricing</button><button class="tab" data-tab="instructors">Instructors</button></div>
+<div id="locked" class="panel locked" hidden>Admin access required — sign in with an admin account.</div>
+<div id="tab-tiers">
+<div class="panel"><div class="pHead">Platform tiers<button class="btn btn-pine btn-sm" id="addTier">+ Add tier</button></div>
+<div class="scrollX"><table><thead><tr><th>Name</th><th>Price ₦/mo</th><th>Max clients</th><th>Min months</th><th>Features (one per line)</th><th>Active</th><th></th></tr></thead><tbody id="tierRows"></tbody></table></div></div>
+</div>
+<div id="tab-instructors" hidden>
+<div class="panel"><div class="pHead">Instructor subscriptions</div>
+<div class="scrollX"><table><thead><tr><th>Instructor</th><th>Tier</th><th>Paid</th><th>Status</th><th>Starts</th><th>Ends</th><th></th></tr></thead><tbody id="insRows"></tbody></table></div></div>
+</div>
+</div>
+<div id="toasts"></div>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function toast(m,k){const t=document.createElement('div');t.className='toast '+(k||'');t.textContent=m;$('#toasts').appendChild(t);setTimeout(()=>t.remove(),3800);}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+ document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
+ $('#tab-tiers').hidden=b.dataset.tab!=='tiers';$('#tab-instructors').hidden=b.dataset.tab!=='instructors';
+}));
+let TIERS=[],INSTRUCTORS=[],SUBS=[];
+async function boot(){
+ if(typeof supabaseClient==='undefined'){toast('supabase.js missing');return;}
+ const {data:{user}}=await supabaseClient.auth.getUser();
+ if(!user){location.href='/auth.html';return;}
+ const {data:prof}=await supabaseClient.from('profiles').select('role').eq('id',user.id).single();
+ if(!prof||prof.role!=='admin'){
+  document.querySelector('.tabs').style.display='none';
+  document.querySelectorAll('#tab-tiers,#tab-instructors').forEach(el=>el.hidden=true);
+  const lk=$('#locked');lk.hidden=false;
+  lk.innerHTML=`Admin access required.<br>
+  <small style="display:block;margin-top:10px;line-height:1.7">
+  Signed in as <b>${esc(user.email||'unknown')}</b> · role: <b>${esc(prof?.role||'no profile row')}</b>.<br>
+  Set this profile's <b>role</b> to <code>admin</code> in the Supabase dashboard, then refresh this page.</small>`;
+  return;
+ }
+ await Promise.all([loadTiers(),loadInstructors()]);
+}
+async function loadTiers(){
+ const r=await supabaseClient.from('platform_tiers').select('*').order('price');
+ TIERS=r.data||[];renderTiers();
+}
+function renderTiers(){
+ $('#tierRows').innerHTML=TIERS.map(t=>`<tr data-id="${t.id}">
+ <td><input type="text" data-f="name" value="${esc(t.name)}"></td>
+ <td><input type="number" data-f="price" value="${t.price}" style="width:90px"></td>
+ <td><input type="number" data-f="max_clients" value="${t.max_clients}" style="width:70px"></td>
+ <td><input type="number" data-f="min_months" value="${t.min_months}" style="width:70px"></td>
+ <td><textarea data-f="features" rows="2" style="min-width:180px">${esc((t.features||[]).join('\n'))}</textarea></td>
+ <td><label class="switch"><input type="checkbox" data-f="active" ${t.active?'checked':''}><i></i></label></td>
+ <td style="white-space:nowrap"><button class="btn btn-pine btn-sm" data-save>Save</button> <button class="btn btn-danger btn-sm" data-del>Delete</button></td></tr>`).join('')
+ ||'<tr><td colspan="7" style="color:var(--mut);padding:18px">No tiers yet — add the Free tier to start.</td></tr>';
+}
+ $('#addTier')?.addEventListener('click',async()=>{
+ const {data,error}=await supabaseClient.from('platform_tiers').insert({name:'New tier',price:0,max_clients:5,min_months:3,features:['Feature one'],active:false}).select().single();
+ if(error){toast('Add failed: '+error.message);return;}await loadTiers();
+});
+ $('#tierRows')?.addEventListener('click',async e=>{
+ const tr=e.target.closest('tr[data-id]');if(!tr)return;const id=tr.dataset.id;
+ if(e.target.closest('[data-del]')){
+  if(!confirm('Delete this tier? Instructors on it fall back to Free.'))return;
+  const {error}=await supabaseClient.from('platform_tiers').delete().eq('id',id);
+  if(error){toast('Delete failed: '+error.message);return;}toast('Tier deleted','ok');loadTiers();
+ }
+ if(e.target.closest('[data-save]')){
+  const g=f=>tr.querySelector(`[data-f="${f}"]`);
+  const patch={name:g('name').value.trim(),price:+g('price').value||0,max_clients:Math.max(0,+g('max_clients').value||0),min_months:Math.max(0,+g('min_months').value||0),active:g('active').checked,features:g('features').value.split('\n').map(x=>x.trim()).filter(Boolean)};
+  const {error}=await supabaseClient.from('platform_tiers').update(patch).eq('id',id);
+  if(error){toast('Save failed: '+error.message);return;}toast('Tier saved','ok');loadTiers();
+ }
+});
+async function loadInstructors(){
+ const [p,subs]=await Promise.all([
+  supabaseClient.from('profiles').select('id,full_name,username,email').eq('role','instructor').order('full_name'),
+  supabaseClient.from('instructor_subscriptions').select('*').order('created_at',{ascending:false})
+ ]);
+ INSTRUCTORS=p.data||[];SUBS=subs.data||[];renderInstructors();
+}
+function renderInstructors(){
+ $('#insRows').innerHTML=INSTRUCTORS.map(i=>{
+  const s=SUBS.find(x=>x.instructor_id===i.id);
+  return `<tr data-iid="${i.id}">
+  <td><b>${esc(i.full_name||i.username||'—')}</b><br><small style="color:var(--mut)">${esc(i.email||'')}</small></td>
+  <td><select data-f="tier_id" style="min-width:120px"><option value="">Free</option>${TIERS.map(t=>`<option value="${t.id}" ${s&&s.tier_id===t.id?'selected':''}>${esc(t.name)} · ₦${t.price}</option>`).join('')}</select></td>
+  <td><label class="switch"><input type="checkbox" data-f="paid" ${s&&s.paid?'checked':''}><i></i></label></td>
+  <td><select data-f="status" style="min-width:100px">${['pending','active','expired','cancelled'].map(x=>`<option ${s&&s.status===x?'selected':''}>${x}</option>`).join('')}</select></td>
+  <td><input type="date" data-f="starts_on" value="${s&&s.starts_on?s.starts_on:''}" style="width:130px"></td>
+  <td><input type="date" data-f="ends_on" value="${s&&s.ends_on?s.ends_on:''}" style="width:130px"></td>
+  <td><button class="btn btn-pine btn-sm" data-save>Save</button></td></tr>`;
+ }).join('')||'<tr><td colspan="7" style="color:var(--mut);padding:18px">No instructors yet.</td></tr>';
+}
+ $('#insRows')?.addEventListener('click',async e=>{
+ const b=e.target.closest('[data-save]');if(!b)return;
+ const tr=e.target.closest('tr[data-iid]');const iid=tr.dataset.iid;
+ const g=f=>tr.querySelector(`[data-f="${f}"]`);
+ const existing=SUBS.find(x=>x.instructor_id===iid);
+ const payload={instructor_id:iid,tier_id:g('tier_id').value||null,paid:g('paid').checked,status:g('status').value,starts_on:g('starts_on').value||null,ends_on:g('ends_on').value||null};
+ const {error}=existing
+  ?await supabaseClient.from('instructor_subscriptions').update(payload).eq('id',existing.id)
+  :await supabaseClient.from('instructor_subscriptions').insert(payload);
+ if(error){toast('Save failed: '+error.message);return;}
+ toast('Subscription saved — instructor sees it on their Subscription tab','ok');loadInstructors();
+});
+boot();
+</script>
+</body>
+</html>
