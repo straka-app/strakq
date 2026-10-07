@@ -9,76 +9,172 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/supabase.js"></script>
 <style>
-:root{--bg:#ECF0E6;--paper:#FBFCF8;--ink:#132A21;--mut:#5C6E63;--pine:#0E3B2E;--pine2:#0A2A21;--pine3:#135141;--line:rgba(19,40,31,.14);--line2:rgba(19,40,31,.08);--gold:#EFA51C;--gold2:#D98E0F;--gold-hi:#F7C766;--gold-ink:#7A4E00;--ok:#1F8A5B;--ok-bg:#E2F1E7;--red:#BF4229;--red-bg:#F7E5E0;--disp:'Bricolage Grotesque',system-ui,sans-serif;--body:'Instrument Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
+:root{--bg:#ECF0E6;--paper:#FBFCF8;--ink:#132A21;--mut:#5C6E63;--pine:#0E3B2E;--pine2:#0A2A21;--pine3:#135141;--line:rgba(19,40,31,.14);--line2:rgba(19,40,31,.08);--gold:#EFA51C;--gold2:#D98E0F;--gold-hi:#F7C766;--gold-ink:#7A4E00;--amber-bg:#FBF1DA;--ok:#1F8A5B;--ok-bg:#E2F1E7;--red:#BF4229;--red-bg:#F7E5E0;--disp:'Bricolage Grotesque',system-ui,sans-serif;--body:'Instrument Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace}
 *{margin:0;padding:0;box-sizing:border-box}button{font-family:inherit;cursor:pointer}
 body{font:15px/1.5 var(--body);color:var(--ink);background:var(--bg);min-height:100vh;padding:34px 20px}
 .wrap{max-width:1060px;margin:0 auto}
-h1{font:800 30px var(--disp);letter-spacing:-.02em}.sub{color:var(--mut);font-size:13.5px;margin:4px 0 24px}
-.tabs{display:flex;gap:8px;margin-bottom:18px}
-.tab{padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--paper);font:600 13px var(--body);color:var(--mut)}
+h1{font:800 30px var(--disp);letter-spacing:-.02em}.sub{color:var(--mut);font-size:13.5px;margin:4px 0 20px}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 1px 2px rgba(13,37,29,.05)}
+.stat small{display:block;font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.stat b{display:block;font:600 24px var(--mono);letter-spacing:-.02em;margin-top:4px;word-break:break-word}
+.stat em{font-style:normal;font-size:12px;color:var(--mut)}
+.stat.alert{background:var(--amber-bg);border-color:rgba(217,142,15,.4)}.stat.alert b{color:var(--gold-ink)}
+/* tabs */
+.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--paper);font:600 13px var(--body);color:var(--mut);display:inline-flex;align-items:center;gap:8px}
 .tab.on{background:linear-gradient(180deg,var(--pine3),var(--pine));color:#F3F7EF;border-color:var(--pine)}
+.tab .cnt{min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--gold);color:#221703;font:600 11px var(--mono);display:inline-flex;align-items:center;justify-content:center}
 .panel{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(13,37,29,.06),0 8px 24px -14px rgba(13,37,29,.18);overflow:hidden;margin-bottom:18px}
-.pHead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line2);font:700 15px var(--disp)}
-.pHead .btn{margin-left:auto}
+.pHead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line2);font:700 15px var(--disp);flex-wrap:wrap}
+.pHead .btn,.pHead .grow{margin-left:auto}
+.pBody{padding:18px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mut);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line2)}
 td{padding:9px 12px;border-bottom:1px solid var(--line2);vertical-align:middle}
 tr:last-child td{border-bottom:none}
-input[type=text],input[type=number],select,textarea{border:1px solid var(--line);border-radius:8px;padding:7px 9px;font:400 13px var(--body);background:#fff;outline:none;width:100%;min-width:70px}
+input[type=text],input[type=number],input[type=date],input[type=search],select,textarea{border:1px solid var(--line);border-radius:8px;padding:7px 9px;font:400 13px var(--body);background:#fff;outline:none;width:100%;min-width:70px}
 input:focus,select:focus,textarea:focus{border-color:var(--pine)}
-.btn{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--body);padding:8px 14px;border-radius:9px;border:1px solid transparent;text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:600 13px var(--body);padding:8px 14px;border-radius:9px;border:1px solid transparent;text-decoration:none}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
 .btn-pine{background:linear-gradient(180deg,var(--pine3),var(--pine));color:#F3F7EF}
+.btn-gold{background:linear-gradient(180deg,var(--gold-hi),var(--gold) 55%,var(--gold2));color:#221703}
 .btn-ghost{background:none;border-color:rgba(19,40,31,.28);color:var(--ink)}
 .btn-danger{background:none;border-color:rgba(191,66,41,.4);color:var(--red)}
 .btn-sm{padding:6px 10px;font-size:12px}
-.chip{font:600 10px var(--mono);text-transform:uppercase;letter-spacing:.08em;padding:4px 9px;border-radius:99px}
-.chip.on{background:var(--ok-bg);color:var(--ok)}.chip.off{background:var(--red-bg);color:var(--red)}
+.chip{font:600 10px var(--mono);text-transform:uppercase;letter-spacing:.08em;padding:4px 9px;border-radius:99px;white-space:nowrap}
+.chip.on{background:var(--ok-bg);color:var(--ok)}.chip.off{background:var(--red-bg);color:var(--red)}.chip.wait{background:var(--amber-bg);color:var(--gold-ink)}.chip.mut{background:rgba(19,40,31,.08);color:var(--mut)}
 .locked{padding:60px 20px;text-align:center;color:var(--mut)}
+.empty{padding:26px 18px;color:var(--mut);font-size:13.5px;text-align:center}
 .switch{position:relative;width:38px;height:22px;flex:none;display:inline-block}
 .switch input{display:none}
 .switch i{position:absolute;inset:0;background:rgba(19,40,31,.2);border-radius:99px;transition:.2s;cursor:pointer}
 .switch i::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:99px;background:#fff;transition:.2s}
 .switch input:checked+i{background:var(--ok)}
 .switch input:checked+i::after{left:19px}
-#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:99}
+small.m{color:var(--mut);font-size:12px}
+/* requests */
+.reqCard{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1.1fr) auto;gap:14px;align-items:center;padding:14px 18px;border-top:1px solid var(--line2)}
+.reqCard:first-child{border-top:none}
+.reqCard.claimed{background:linear-gradient(90deg,rgba(31,138,91,.08),transparent 60%);box-shadow:inset 3px 0 0 var(--ok)}
+.reqCard b{display:block;font-size:14px}.reqCard small{display:block;color:var(--mut);font-size:12px;margin-top:2px;word-break:break-word}
+.reqAct{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.reqAct label{display:flex;align-items:center;gap:6px;font:600 11px var(--mono);color:var(--mut);text-transform:uppercase;letter-spacing:.08em}
+.reqAct label input{width:58px;min-width:0}
+.pulse{display:inline-block;width:8px;height:8px;border-radius:99px;background:var(--ok);margin-right:6px;animation:pl 1.6s infinite}
+@keyframes pl{0%{box-shadow:0 0 0 0 rgba(31,138,91,.5)}70%{box-shadow:0 0 0 8px rgba(31,138,91,0)}100%{box-shadow:0 0 0 0 rgba(31,138,91,0)}}
+.toolbar{display:flex;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+.toolbar input{flex:1 1 220px}.toolbar select{flex:0 1 170px}
+/* systems */
+.acctRow{display:grid;grid-template-columns:1fr 1.3fr 1fr auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:#fff}
+.fl{display:flex;flex-direction:column;gap:5px;font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.fl input,.fl textarea{text-transform:none;letter-spacing:0;font-family:var(--body);font-weight:400}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.prevBox{margin-top:16px;padding:14px;border-radius:12px;background:var(--amber-bg);border:1px dashed rgba(217,142,15,.5)}
+.prevBox h4{font:700 13px var(--disp);margin-bottom:8px;color:var(--gold-ink)}
+.prevAcct{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.prevAcct small{display:block;font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.prevAcct .n{font:600 16px var(--mono);color:var(--pine);letter-spacing:.04em}
+pre.sql{background:#0A2A21;color:#DDEBDD;border-radius:10px;padding:14px;font:12px/1.55 var(--mono);overflow:auto;max-height:340px;white-space:pre}
+details summary{cursor:pointer;font:600 13px var(--body);padding:2px 0}
+.chk{display:flex;flex-direction:column;gap:6px;margin-top:12px;font-size:13px}
+.chk div{display:flex;gap:8px;align-items:flex-start}
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:99;max-width:calc(100vw - 40px)}
 .toast{background:rgba(10,42,33,.94);color:#F2F6EF;border-radius:12px;padding:11px 15px;font-size:13px;border-left:4px solid var(--gold)}
 .toast.ok{border-left-color:#3FBF82}
+@media(max-width:860px){
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .reqCard{grid-template-columns:1fr 1fr}.reqAct{grid-column:1/-1;justify-content:flex-start}
+ .acctRow{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}
+}
+@media(max-width:560px){body{padding:22px 14px}.reqCard{grid-template-columns:1fr}.acctRow{grid-template-columns:1fr}.reqAct .btn{flex:1}}
 @media(max-width:760px){.scrollX{overflow-x:auto}table{min-width:640px}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <h1>Straka Admin</h1>
-<p class="sub">Tiers, pricing and instructor access. Changes apply to the instructor console instantly.</p>
-<div class="tabs"><button class="tab on" data-tab="tiers">Tiers &amp; pricing</button><button class="tab" data-tab="instructors">Instructors</button></div>
+<p class="sub">Plan requests, tiers, instructor access and payment details. Changes apply to the instructor console instantly.</p>
+<div class="stats" id="stats"></div>
+<div class="tabs" id="tabs">
+ <button class="tab on" data-tab="requests">Requests <span class="cnt" id="reqCnt" hidden>0</span></button>
+ <button class="tab" data-tab="tiers">Tiers &amp; pricing</button>
+ <button class="tab" data-tab="instructors">Instructors</button>
+ <button class="tab" data-tab="systems">Systems</button>
+</div>
 <div id="locked" class="panel locked" hidden>Admin access required — sign in with an admin account.</div>
-<div id="tab-tiers">
+
+<!-- REQUESTS -->
+<div id="tab-requests">
+ <div class="panel"><div class="pHead">Plan requests <span class="chip wait" id="reqSum">0 open</span><button class="btn btn-ghost btn-sm grow" id="reloadReq">Refresh</button></div><div id="reqList"></div></div>
+ <div class="panel"><div class="pHead">Recently handled</div><div class="scrollX"><table><thead><tr><th>Instructor</th><th>Plan</th><th>Outcome</th><th>When</th></tr></thead><tbody id="reqHist"></tbody></table></div></div>
+</div>
+
+<!-- TIERS -->
+<div id="tab-tiers" hidden>
 <div class="panel"><div class="pHead">Platform tiers<button class="btn btn-pine btn-sm" id="addTier">+ Add tier</button></div>
 <div class="scrollX"><table><thead><tr><th>Name</th><th>Price ₦/mo</th><th>Max clients</th><th>Min months</th><th>Features (one per line)</th><th>Active</th><th></th></tr></thead><tbody id="tierRows"></tbody></table></div></div>
 </div>
+
+<!-- INSTRUCTORS -->
 <div id="tab-instructors" hidden>
 <div class="panel"><div class="pHead">Instructor subscriptions</div>
+<div class="toolbar"><input type="search" id="insQ" placeholder="Search name, username or email…"><select id="insF"><option value="">All instructors</option><option value="free">On Free</option><option value="paid">Paid &amp; active</option><option value="expiring">Ending ≤ 7 days</option><option value="pending">Request pending</option></select></div>
 <div class="scrollX"><table><thead><tr><th>Instructor</th><th>Tier</th><th>Paid</th><th>Status</th><th>Starts</th><th>Ends</th><th></th></tr></thead><tbody id="insRows"></tbody></table></div></div>
+</div>
+
+<!-- SYSTEMS -->
+<div id="tab-systems" hidden>
+<div class="panel"><div class="pHead">Payment details shown to instructors<span class="m" style="font:400 12px var(--body);color:var(--mut)" id="payUpdated"></span></div>
+<div class="pBody">
+ <div id="acctList"></div>
+ <button class="btn btn-ghost btn-sm" id="addAcct" type="button">+ Add account</button>
+ <div class="grid2">
+  <label class="fl">Payment instructions (one step per line — optional)<textarea id="payInstr" rows="5" placeholder="Transfer the exact plan amount&#10;Use your username as the payment reference&#10;(Leave blank to use the default steps)"></textarea></label>
+  <label class="fl">Support WhatsApp (shown if no account is set)<input type="text" id="payWa" placeholder="2348012345678"><small class="m" style="text-transform:none;letter-spacing:0;font-family:var(--body)">Digits only, with country code.</small></label>
+ </div>
+ <div class="prevBox"><h4>What instructors see</h4><div id="payPrev"></div></div>
+ <div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-pine" id="savePay" type="button">Save payment details</button></div>
+</div></div>
+<div class="panel"><div class="pHead">Database setup<button class="btn btn-ghost btn-sm grow" id="chkSetup" type="button">Check setup</button></div>
+<div class="pBody"><details><summary>SQL to run once in the Supabase SQL editor</summary>
+<p class="m" style="margin:8px 0;color:var(--mut);font-size:13px">Creates the settings table, request-tracking columns and the access rules that let instructors request plans (but never activate them).</p>
+<pre class="sql" id="sqlBox"></pre><button class="btn btn-ghost btn-sm" id="copySql" type="button" style="margin-top:10px">Copy SQL</button></details>
+<div class="chk" id="chkOut"></div></div></div>
 </div>
 </div>
 <div id="toasts"></div>
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-function toast(m,k){const t=document.createElement('div');t.className='toast '+(k||'');t.textContent=m;$('#toasts').appendChild(t);setTimeout(()=>t.remove(),3800);}
-document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
- document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
- $('#tab-tiers').hidden=b.dataset.tab!=='tiers';$('#tab-instructors').hidden=b.dataset.tab!=='instructors';
-}));
-let TIERS=[],INSTRUCTORS=[],SUBS=[];
+const money=n=>'₦'+Number(n||0).toLocaleString('en-NG');
+const iso=d=>d.toISOString().slice(0,10);
+function toast(m,k){const t=document.createElement('div');t.className='toast '+(k||'');t.textContent=m;$('#toasts').appendChild(t);setTimeout(()=>t.remove(),4200);}
+function ago(s){if(!s)return '';const m=Math.max(0,Math.round((Date.now()-new Date(s))/60000));if(m<1)return 'just now';if(m<60)return m+' min ago';const h=Math.round(m/60);if(h<24)return h+' h ago';return Math.round(h/24)+' d ago';}
+function waLink(p){let d=String(p||'').replace(/\D/g,'');if(!d)return '';if(d.startsWith('0'))d='234'+d.slice(1);return 'https://wa.me/'+d;}
+const daysTo=d=>d?Math.ceil((new Date(d+'T23:59:59')-new Date())/86400000):null;
+let TIERS=[],INSTRUCTORS=[],SUBS=[],PAY={accounts:[],instructions:'',whatsapp:''},curTab='requests',lastCounts=null;
+
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+function showTab(t){
+ curTab=t;
+ document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));
+ ['requests','tiers','instructors','systems'].forEach(k=>{$('#tab-'+k).hidden=k!==t;});
+}
+const tierOf=id=>TIERS.find(t=>String(t.id)===String(id));
+const who=id=>INSTRUCTORS.find(i=>i.id===id)||{};
+const nameOf=i=>i.full_name||i.username||i.email||'Unknown instructor';
+const pending=()=>SUBS.filter(s=>s.status==='pending');
+
 async function boot(){
  if(typeof supabaseClient==='undefined'){toast('supabase.js missing');return;}
  const {data:{user}}=await supabaseClient.auth.getUser();
  if(!user){location.href='/auth.html';return;}
  const {data:prof}=await supabaseClient.from('profiles').select('role').eq('id',user.id).single();
  if(!prof||prof.role!=='admin'){
-  document.querySelector('.tabs').style.display='none';
-  document.querySelectorAll('#tab-tiers,#tab-instructors').forEach(el=>el.hidden=true);
+  $('#tabs').style.display='none';$('#stats').style.display='none';
+  ['requests','tiers','instructors','systems'].forEach(k=>$('#tab-'+k).hidden=true);
   const lk=$('#locked');lk.hidden=false;
   lk.innerHTML=`Admin access required.<br>
   <small style="display:block;margin-top:10px;line-height:1.7">
@@ -86,12 +182,103 @@ async function boot(){
   Set this profile's <b>role</b> to <code>admin</code> in the Supabase dashboard, then refresh this page.</small>`;
   return;
  }
- await Promise.all([loadTiers(),loadInstructors()]);
+ await loadAll();
+ if(!pending().length)showTab('tiers');
+ subscribeRealtime();
+ setInterval(()=>{if(!document.hidden)loadAll(true);},30000);
 }
-async function loadTiers(){
- const r=await supabaseClient.from('platform_tiers').select('*').order('price');
- TIERS=r.data||[];renderTiers();
+async function loadAll(quiet){
+ const [t,p,s,st]=await Promise.all([
+  supabaseClient.from('platform_tiers').select('*').order('price'),
+  supabaseClient.from('profiles').select('id,full_name,username,email,phone').eq('role','instructor').order('full_name'),
+  supabaseClient.from('instructor_subscriptions').select('*').order('created_at',{ascending:false}),
+  supabaseClient.from('platform_settings').select('value').eq('key','payment_details').maybeSingle()
+ ]);
+ TIERS=t.data||[];INSTRUCTORS=p.data||[];SUBS=s.data||[];
+ if(s.error)toast('Could not load requests: '+s.error.message);
+ if(st&&st.data&&st.data.value){PAY={accounts:[],instructions:'',whatsapp:'',...st.data.value};if(!quiet||!$('#acctList').children.length)renderPay();}
+ else if(!$('#acctList').children.length)renderPay();
+ const open=pending(),claimed=open.filter(x=>x.payment_claimed_at).length;
+ if(quiet&&lastCounts){
+  if(open.length>lastCounts.open){const n=open.find(x=>!lastCounts.ids.includes(x.id));toast('New plan request'+(n?' from '+nameOf(who(n.instructor_id)):''),'ok');}
+  else if(claimed>lastCounts.claimed){const n=open.find(x=>x.payment_claimed_at&&!lastCounts.claimedIds.includes(x.id));toast((n?nameOf(who(n.instructor_id)):'An instructor')+' reported a payment — confirm it','ok');}
+ }
+ lastCounts={open:open.length,claimed,ids:open.map(x=>x.id),claimedIds:open.filter(x=>x.payment_claimed_at).map(x=>x.id)};
+ renderAll();
 }
+function renderAll(){renderStats();renderReqs();renderTiers();renderInstructors();}
+function subscribeRealtime(){
+ try{supabaseClient.channel('admin-subs').on('postgres_changes',{event:'*',schema:'public',table:'instructor_subscriptions'},()=>loadAll(true)).subscribe();}catch(e){}
+}
+
+/* ---------- stats ---------- */
+function renderStats(){
+ const open=pending(),claimed=open.filter(x=>x.payment_claimed_at).length;
+ const act=SUBS.filter(s=>s.status==='active'&&s.paid);
+ const mrr=act.reduce((a,s)=>a+Number((tierOf(s.tier_id)||{}).price||0),0);
+ const exp=SUBS.filter(s=>s.status==='active'&&s.ends_on&&daysTo(s.ends_on)<=7).length;
+ $('#stats').innerHTML=`
+ <div class="stat ${open.length?'alert':''}"><small>Open requests</small><b>${open.length}</b><em>${claimed} payment${claimed===1?'':'s'} reported</em></div>
+ <div class="stat"><small>Paid instructors</small><b>${act.length}</b><em>of ${INSTRUCTORS.length} total</em></div>
+ <div class="stat"><small>Monthly revenue</small><b>${money(mrr)}</b><em>from active paid plans</em></div>
+ <div class="stat"><small>Ending ≤ 7 days</small><b>${exp}</b><em>renewals to chase</em></div>`;
+ const c=$('#reqCnt');c.textContent=open.length;c.hidden=!open.length;
+ document.title=(open.length?'('+open.length+') ':'')+'Straka — Admin';
+}
+
+/* ---------- requests ---------- */
+function renderReqs(){
+ const open=pending().sort((a,b)=>(!!b.payment_claimed_at-!!a.payment_claimed_at)||(new Date(a.created_at)-new Date(b.created_at)));
+ $('#reqSum').textContent=open.length+' open';
+ $('#reqList').innerHTML=open.map(s=>{
+  const i=who(s.instructor_id),t=tierOf(s.tier_id)||{name:'Unknown tier',price:0},c=!!s.payment_claimed_at,wa=waLink(i.phone);
+  return `<div class="reqCard ${c?'claimed':''}" data-sid="${s.id}">
+  <div><b>${esc(nameOf(i))}</b><small>${esc(i.email||'')}${i.phone?' · '+esc(i.phone):''}</small></div>
+  <div><b>${esc(t.name)}</b><small>${Number(t.price)>0?money(t.price)+'/mo':'Free'} · up to ${t.max_clients??'—'} clients${t.min_months?' · min '+t.min_months+' mo':''}</small></div>
+  <div>${c?`<span class="chip on"><span class="pulse"></span>Payment reported</span>`:`<span class="chip wait">Awaiting payment</span>`}<small>requested ${ago(s.created_at)}${c?' · reported '+ago(s.payment_claimed_at):''}</small></div>
+  <div class="reqAct">
+   <label>Months<input type="number" data-f="months" min="1" max="36" value="${Math.max(1,t.min_months||1)}"></label>
+   <button class="btn btn-pine btn-sm" data-confirm>Confirm &amp; activate</button>
+   <button class="btn btn-danger btn-sm" data-reject>Reject</button>
+   ${wa?`<a class="btn btn-ghost btn-sm" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>`:''}
+  </div></div>`;
+ }).join('')||'<div class="empty">No open requests. New ones appear here live.</div>';
+ const done=SUBS.filter(s=>s.status!=='pending').slice(0,12);
+ $('#reqHist').innerHTML=done.map(s=>{
+  const t=tierOf(s.tier_id)||{name:'—'};
+  const o={active:['on','Activated'],cancelled:['off','Cancelled / rejected'],expired:['mut','Replaced / expired']}[s.status]||['mut',s.status];
+  return `<tr><td>${esc(nameOf(who(s.instructor_id)))}</td><td>${esc(t.name)}</td><td><span class="chip ${o[0]}">${o[1]}</span></td><td><small class="m">${ago(s.payment_confirmed_at||s.created_at)}</small></td></tr>`;
+ }).join('')||'<tr><td colspan="4" class="empty">Nothing yet.</td></tr>';
+}
+$('#reloadReq').addEventListener('click',()=>loadAll());
+$('#reqList').addEventListener('click',async e=>{
+ const card=e.target.closest('.reqCard');if(!card)return;
+ const sid=card.dataset.sid,s=SUBS.find(x=>String(x.id)===sid);if(!s)return;
+ const btn=e.target.closest('button');if(!btn)return;
+ if(btn.hasAttribute('data-confirm')){
+  const months=Math.min(36,Math.max(1,parseInt(card.querySelector('[data-f="months"]').value)||1));
+  const who_=nameOf(who(s.instructor_id)),t=tierOf(s.tier_id)||{name:'plan'};
+  if(!s.payment_claimed_at&&!confirm(who_+' has not reported a payment yet. Activate '+t.name+' anyway?'))return;
+  btn.disabled=true;
+  const start=new Date(),end=new Date(start);end.setMonth(end.getMonth()+months);
+  let patch={status:'active',paid:true,starts_on:iso(start),ends_on:iso(end),payment_confirmed_at:new Date().toISOString()};
+  let r=await supabaseClient.from('instructor_subscriptions').update(patch).eq('id',s.id);
+  if(r.error&&/payment_confirmed_at/.test(r.error.message)){delete patch.payment_confirmed_at;r=await supabaseClient.from('instructor_subscriptions').update(patch).eq('id',s.id);}
+  if(r.error){toast('Activation failed: '+r.error.message);btn.disabled=false;return;}
+  await supabaseClient.from('instructor_subscriptions').update({status:'expired'}).eq('instructor_id',s.instructor_id).eq('status','active').neq('id',s.id);
+  await supabaseClient.from('instructor_subscriptions').update({status:'cancelled'}).eq('instructor_id',s.instructor_id).eq('status','pending').neq('id',s.id);
+  toast(who_+' is now on '+t.name+' until '+patch.ends_on,'ok');loadAll();
+ }
+ if(btn.hasAttribute('data-reject')){
+  if(!confirm('Reject this request? The instructor will see it as declined.'))return;
+  btn.disabled=true;
+  const {error}=await supabaseClient.from('instructor_subscriptions').update({status:'cancelled'}).eq('id',s.id);
+  if(error){toast('Reject failed: '+error.message);btn.disabled=false;return;}
+  toast('Request rejected','ok');loadAll();
+ }
+});
+
+/* ---------- tiers ---------- */
 function renderTiers(){
  $('#tierRows').innerHTML=TIERS.map(t=>`<tr data-id="${t.id}">
  <td><input type="text" data-f="name" value="${esc(t.name)}"></td>
@@ -103,55 +290,153 @@ function renderTiers(){
  <td style="white-space:nowrap"><button class="btn btn-pine btn-sm" data-save>Save</button> <button class="btn btn-danger btn-sm" data-del>Delete</button></td></tr>`).join('')
  ||'<tr><td colspan="7" style="color:var(--mut);padding:18px">No tiers yet — add the Free tier to start.</td></tr>';
 }
- $('#addTier')?.addEventListener('click',async()=>{
- const {data,error}=await supabaseClient.from('platform_tiers').insert({name:'New tier',price:0,max_clients:5,min_months:3,features:['Feature one'],active:false}).select().single();
- if(error){toast('Add failed: '+error.message);return;}await loadTiers();
+$('#addTier').addEventListener('click',async()=>{
+ const {error}=await supabaseClient.from('platform_tiers').insert({name:'New tier',price:0,max_clients:5,min_months:3,features:['Feature one'],active:false});
+ if(error){toast('Add failed: '+error.message);return;}await loadAll();
 });
- $('#tierRows')?.addEventListener('click',async e=>{
+$('#tierRows').addEventListener('click',async e=>{
  const tr=e.target.closest('tr[data-id]');if(!tr)return;const id=tr.dataset.id;
  if(e.target.closest('[data-del]')){
   if(!confirm('Delete this tier? Instructors on it fall back to Free.'))return;
   const {error}=await supabaseClient.from('platform_tiers').delete().eq('id',id);
-  if(error){toast('Delete failed: '+error.message);return;}toast('Tier deleted','ok');loadTiers();
+  if(error){toast('Delete failed: '+error.message);return;}toast('Tier deleted','ok');loadAll();
  }
  if(e.target.closest('[data-save]')){
   const g=f=>tr.querySelector(`[data-f="${f}"]`);
   const patch={name:g('name').value.trim(),price:+g('price').value||0,max_clients:Math.max(0,+g('max_clients').value||0),min_months:Math.max(0,+g('min_months').value||0),active:g('active').checked,features:g('features').value.split('\n').map(x=>x.trim()).filter(Boolean)};
   const {error}=await supabaseClient.from('platform_tiers').update(patch).eq('id',id);
-  if(error){toast('Save failed: '+error.message);return;}toast('Tier saved','ok');loadTiers();
+  if(error){toast('Save failed: '+error.message);return;}toast('Tier saved','ok');loadAll();
  }
 });
-async function loadInstructors(){
- const [p,subs]=await Promise.all([
-  supabaseClient.from('profiles').select('id,full_name,username,email').eq('role','instructor').order('full_name'),
-  supabaseClient.from('instructor_subscriptions').select('*').order('created_at',{ascending:false})
- ]);
- INSTRUCTORS=p.data||[];SUBS=subs.data||[];renderInstructors();
-}
+
+/* ---------- instructors ---------- */
+const curSub=id=>SUBS.find(x=>x.instructor_id===id&&x.status==='active')||SUBS.find(x=>x.instructor_id===id&&x.status!=='pending')||SUBS.find(x=>x.instructor_id===id);
 function renderInstructors(){
- $('#insRows').innerHTML=INSTRUCTORS.map(i=>{
-  const s=SUBS.find(x=>x.instructor_id===i.id);
+ const q=($('#insQ').value||'').toLowerCase(),f=$('#insF').value;
+ const rows=INSTRUCTORS.filter(i=>{
+  const s=curSub(i.id),hasReq=SUBS.some(x=>x.instructor_id===i.id&&x.status==='pending');
+  if(q&&!(nameOf(i)+' '+(i.email||'')+' '+(i.username||'')).toLowerCase().includes(q))return false;
+  if(f==='free')return !s||s.status!=='active';
+  if(f==='paid')return s&&s.status==='active'&&s.paid;
+  if(f==='expiring')return s&&s.status==='active'&&s.ends_on&&daysTo(s.ends_on)<=7;
+  if(f==='pending')return hasReq;
+  return true;
+ });
+ $('#insRows').innerHTML=rows.map(i=>{
+  const s=curSub(i.id),hasReq=SUBS.some(x=>x.instructor_id===i.id&&x.status==='pending'),left=s&&s.status==='active'&&s.ends_on?daysTo(s.ends_on):null;
   return `<tr data-iid="${i.id}">
-  <td><b>${esc(i.full_name||i.username||'—')}</b><br><small style="color:var(--mut)">${esc(i.email||'')}</small></td>
-  <td><select data-f="tier_id" style="min-width:120px"><option value="">Free</option>${TIERS.map(t=>`<option value="${t.id}" ${s&&s.tier_id===t.id?'selected':''}>${esc(t.name)} · ₦${t.price}</option>`).join('')}</select></td>
+  <td><b>${esc(nameOf(i))}</b>${hasReq?' <span class="chip wait">request</span>':''}<br><small class="m">${esc(i.email||'')}</small>${left!==null&&left<=7?`<br><small style="color:var(--red)">${left<0?'ended':'ends in '+left+' d'}</small>`:''}</td>
+  <td><select data-f="tier_id" style="min-width:120px"><option value="">Free</option>${TIERS.map(t=>`<option value="${t.id}" ${s&&String(s.tier_id)===String(t.id)?'selected':''}>${esc(t.name)} · ₦${t.price}</option>`).join('')}</select></td>
   <td><label class="switch"><input type="checkbox" data-f="paid" ${s&&s.paid?'checked':''}><i></i></label></td>
   <td><select data-f="status" style="min-width:100px">${['pending','active','expired','cancelled'].map(x=>`<option ${s&&s.status===x?'selected':''}>${x}</option>`).join('')}</select></td>
   <td><input type="date" data-f="starts_on" value="${s&&s.starts_on?s.starts_on:''}" style="width:130px"></td>
   <td><input type="date" data-f="ends_on" value="${s&&s.ends_on?s.ends_on:''}" style="width:130px"></td>
   <td><button class="btn btn-pine btn-sm" data-save>Save</button></td></tr>`;
- }).join('')||'<tr><td colspan="7" style="color:var(--mut);padding:18px">No instructors yet.</td></tr>';
+ }).join('')||'<tr><td colspan="7" style="color:var(--mut);padding:18px">No instructors match.</td></tr>';
 }
- $('#insRows')?.addEventListener('click',async e=>{
+$('#insQ').addEventListener('input',renderInstructors);$('#insF').addEventListener('change',renderInstructors);
+$('#insRows').addEventListener('click',async e=>{
  const b=e.target.closest('[data-save]');if(!b)return;
  const tr=e.target.closest('tr[data-iid]');const iid=tr.dataset.iid;
  const g=f=>tr.querySelector(`[data-f="${f}"]`);
- const existing=SUBS.find(x=>x.instructor_id===iid);
+ const existing=curSub(iid);
  const payload={instructor_id:iid,tier_id:g('tier_id').value||null,paid:g('paid').checked,status:g('status').value,starts_on:g('starts_on').value||null,ends_on:g('ends_on').value||null};
  const {error}=existing
   ?await supabaseClient.from('instructor_subscriptions').update(payload).eq('id',existing.id)
   :await supabaseClient.from('instructor_subscriptions').insert(payload);
  if(error){toast('Save failed: '+error.message);return;}
- toast('Subscription saved — instructor sees it on their Subscription tab','ok');loadInstructors();
+ toast('Subscription saved — instructor sees it on their Subscription tab','ok');loadAll();
+});
+
+/* ---------- systems: payment details ---------- */
+function renderPay(){
+ $('#acctList').innerHTML=(PAY.accounts||[]).map((a,i)=>`<div class="acctRow" data-i="${i}">
+  <label class="fl">Bank<input type="text" data-a="bank" value="${esc(a.bank)}" placeholder="e.g. GTBank"></label>
+  <label class="fl">Account name<input type="text" data-a="name" value="${esc(a.name)}" placeholder="Account holder"></label>
+  <label class="fl">Account number<input type="text" data-a="number" value="${esc(a.number)}" placeholder="0123456789" inputmode="numeric"></label>
+  <button class="btn btn-danger btn-sm" data-rm type="button">Remove</button></div>`).join('')
+  ||'<div class="empty" style="padding:14px 0;text-align:left">No account yet — add the account instructors should pay into.</div>';
+ $('#payInstr').value=PAY.instructions||'';$('#payWa').value=PAY.whatsapp||'';
+ renderPrev();
+}
+function readPay(){
+ const accounts=[...document.querySelectorAll('#acctList .acctRow')].map(r=>({bank:r.querySelector('[data-a=bank]').value.trim(),name:r.querySelector('[data-a=name]').value.trim(),number:r.querySelector('[data-a=number]').value.trim()}));
+ return{accounts,instructions:$('#payInstr').value.trim(),whatsapp:$('#payWa').value.replace(/\D/g,'')};
+}
+function renderPrev(){
+ const p=readPay(),ac=p.accounts.filter(a=>a.bank||a.number||a.name);
+ const steps=p.instructions?p.instructions.split('\n').map(x=>x.trim()).filter(Boolean):['Transfer exactly the plan amount to the account above.','Use your username as the payment reference.'];
+ $('#payPrev').innerHTML=(ac.map(a=>`<div class="prevAcct"><div><small>${esc(a.bank||'Bank')}</small><b>${esc(a.name||'Account name')}</b></div><span class="n">${esc(a.number||'—')}</span></div>`).join('')||'<small class="m">No account set — instructors will be told to contact support.</small>')
+ +`<ol style="margin:10px 0 0 18px;font-size:13px">${steps.map(s=>`<li>${esc(s)}</li>`).join('')}<li>Come back and tap <b>I've made payment</b>.</li></ol>
+ <small class="m" style="display:block;margin-top:8px">⏱ Admin confirmation takes less than a minute.</small>`;
+}
+$('#addAcct').addEventListener('click',()=>{PAY=readPay();PAY.accounts.push({bank:'',name:'',number:''});renderPay();});
+$('#acctList').addEventListener('click',e=>{if(!e.target.closest('[data-rm]'))return;const i=+e.target.closest('.acctRow').dataset.i;PAY=readPay();PAY.accounts.splice(i,1);renderPay();});
+['#acctList','#payInstr','#payWa'].forEach(s=>$(s).addEventListener('input',renderPrev));
+$('#savePay').addEventListener('click',async()=>{
+ const v=readPay();v.accounts=v.accounts.filter(a=>a.bank||a.name||a.number);
+ const b=$('#savePay');b.disabled=true;
+ const {error}=await supabaseClient.from('platform_settings').upsert({key:'payment_details',value:v,updated_at:new Date().toISOString()},{onConflict:'key'});
+ b.disabled=false;
+ if(error){toast('Save failed: '+error.message+' — run the Database setup SQL below');return;}
+ PAY=v;renderPay();$('#payUpdated').textContent='Saved '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+ toast('Payment details saved — instructors see them immediately','ok');
+});
+
+/* ---------- systems: DB setup helper ---------- */
+const SQL=`-- 1) Settings table (payment details live here)
+create table if not exists public.platform_settings (
+  key text primary key,
+  value jsonb not null default '{}'::jsonb,
+  updated_at timestamptz default now()
+);
+alter table public.platform_settings enable row level security;
+drop policy if exists "settings read" on public.platform_settings;
+create policy "settings read" on public.platform_settings
+  for select to authenticated using (true);
+drop policy if exists "settings admin write" on public.platform_settings;
+create policy "settings admin write" on public.platform_settings
+  for all to authenticated
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+
+-- 2) Request tracking
+alter table public.instructor_subscriptions
+  add column if not exists payment_claimed_at timestamptz,
+  add column if not exists payment_confirmed_at timestamptz;
+
+-- 3) Access rules on instructor_subscriptions
+alter table public.instructor_subscriptions enable row level security;
+drop policy if exists "inst sub read own" on public.instructor_subscriptions;
+create policy "inst sub read own" on public.instructor_subscriptions
+  for select to authenticated using (instructor_id = auth.uid());
+drop policy if exists "inst sub request" on public.instructor_subscriptions;
+create policy "inst sub request" on public.instructor_subscriptions
+  for insert to authenticated
+  with check (instructor_id = auth.uid() and status = 'pending' and paid = false);
+drop policy if exists "inst sub update pending" on public.instructor_subscriptions;
+create policy "inst sub update pending" on public.instructor_subscriptions
+  for update to authenticated
+  using (instructor_id = auth.uid() and status = 'pending')
+  with check (instructor_id = auth.uid() and status in ('pending','cancelled')
+              and paid = false and payment_confirmed_at is null);
+drop policy if exists "admin manage subs" on public.instructor_subscriptions;
+create policy "admin manage subs" on public.instructor_subscriptions
+  for all to authenticated
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'))
+  with check (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+
+-- 4) Live updates (ignore the error if already added)
+alter publication supabase_realtime add table public.instructor_subscriptions;`;
+$('#sqlBox').textContent=SQL;
+$('#copySql').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(SQL);toast('SQL copied','ok');}catch(e){toast('Could not copy — select the text manually');}});
+$('#chkSetup').addEventListener('click',async()=>{
+ const out=$('#chkOut');out.innerHTML='<div>Checking…</div>';
+ const a=await supabaseClient.from('platform_settings').select('key').limit(1);
+ const b=await supabaseClient.from('instructor_subscriptions').select('payment_claimed_at,payment_confirmed_at').limit(1);
+ const row=(ok,t,e)=>`<div><span>${ok?'✅':'❌'}</span><span>${t}${ok?'':' — <small class="m">'+esc(e||'')+'</small>'}</span></div>`;
+ out.innerHTML=row(!a.error,'platform_settings table readable',a.error&&a.error.message)+row(!b.error,'Request tracking columns exist',b.error&&b.error.message)
+  +'<div><span>ℹ️</span><span><small class="m">Instructor-side permissions are covered by section 3 of the SQL; re-run it if instructors see “check table permissions”.</small></span></div>';
 });
 boot();
 </script>

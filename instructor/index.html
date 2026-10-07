@@ -727,6 +727,94 @@ kbd[data-kbd],.cmdkHead kbd{font:600 10px var(--mono);color:var(--mut);border:1p
 .tierCard ul{list-style:none;display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--mut);margin:0 0 4px;padding:0}
 .tierCard ul li::before{content:"✓ ";color:var(--gold2);font-weight:700}
 
+
+/* ============ PROFILE: RESPONSIVE FIXES ============ */
+#app.wrap{width:100%;min-width:0}
+#profileMount,#view-profile .masthead,#view-profile .profGrid{min-width:0;max-width:100%}
+.profGrid{grid-template-columns:340px minmax(0,1fr)}
+.mastGrid{grid-template-columns:minmax(0,1fr) auto}
+.mastId,.mastName{min-width:0}
+.mastName h1{overflow-wrap:anywhere}
+.linkChip{max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.35}
+.linkBox .lk{min-width:0}
+.pfActions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+@media(max-width:960px){
+.profGrid{grid-template-columns:minmax(0,1fr)}
+.mastGrid{grid-template-columns:minmax(0,1fr)}
+.mastGrid>div:last-child{align-items:stretch!important;width:100%}
+.mastActions{width:100%}
+.mastStats{align-self:stretch;width:100%}
+.mastStat{flex:1;min-width:0}
+}
+@media(max-width:640px){
+#view-profile .masthead .wrap{padding:0 18px}
+.mastGrid{padding:28px 0 26px;gap:22px}
+.mastId{gap:16px}
+.mastId .ava{width:84px;height:84px;border-radius:24px;font-size:34px}
+.mastName h1{font-size:clamp(2rem,10vw,2.6rem)}
+.mastActions>.btn{flex:1 1 calc(50% - 5px);justify-content:center}
+.mastActions>.btn-light{flex-basis:100%}
+.mastStat{padding:13px 10px}
+.mastStat b{font-size:22px}
+.mastStat span{font-size:9px;letter-spacing:.1em}
+.pfActions>.btn{flex:1;justify-content:center}
+.linkBox{flex-wrap:wrap}
+.linkBox .lk{flex:1 1 100%}
+.linkBox .btn{width:100%;justify-content:center}
+.npPanel{border-radius:16px}
+.pageHead{margin:24px 0 18px}
+.profPhoto{padding:20px 16px}
+}
+
+/* ============ SUBSCRIPTION: PAYMENT FLOW ============ */
+.payCard{border-color:rgba(217,142,15,.42);background:linear-gradient(180deg,#fff,var(--amber-bg))}
+.payCard .npHead{background:rgba(239,165,28,.1)}
+.payBody{padding:18px}
+.payFlow{list-style:none;display:flex;margin:0 0 20px;padding:0}
+.payFlow li{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;position:relative;font:600 11.5px var(--body);color:var(--mut);text-align:center}
+.payFlow li::before{content:"";position:absolute;top:13px;left:-50%;width:100%;height:2px;background:var(--line)}
+.payFlow li:first-child::before{display:none}
+.payFlow li.done::before,.payFlow li.now::before{background:var(--gold)}
+.payFlow li i{position:relative;z-index:1;width:28px;height:28px;border-radius:99px;display:grid;place-items:center;font:600 12px var(--mono);font-style:normal;background:var(--paper);border:2px solid var(--line);color:var(--mut)}
+.payFlow li.done i{background:var(--ok);border-color:var(--ok);color:#fff}
+.payFlow li.now i{background:var(--gold);border-color:var(--gold2);color:#221703;box-shadow:0 0 0 5px rgba(239,165,28,.22)}
+.payFlow li.done,.payFlow li.now{color:var(--ink)}
+.payAmt{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;border-radius:12px;background:var(--pine);color:#F2F6EF;margin-bottom:12px}
+.payAmt small{display:block;font:500 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#9FB8A9}
+.payAmt b{display:block;font:600 28px var(--mono);color:#F7C766;letter-spacing:-.02em}
+.payAmt em{font-style:normal;font-size:12px;color:#C9D8CC}
+.payAcct{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:8px;flex-wrap:wrap}
+.payAcct .who{flex:1;min-width:150px}
+.payAcct small{display:block;font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin-bottom:2px}
+.payAcct b{font-size:14px}
+.payAcct .num{font:600 19px var(--mono);letter-spacing:.05em;color:var(--pine);word-break:break-all}
+.payRef{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--mut);margin:4px 0 2px}
+.payRef code{font:600 12.5px var(--mono);background:var(--sage);color:var(--pine);padding:4px 9px;border-radius:7px}
+.paySteps{margin:14px 0 0 18px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink)}
+.payActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.payNote{display:flex;align-items:center;gap:6px;font:500 11.5px var(--body);color:var(--mut);margin-top:10px}
+.payWait{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px;background:#fff;border:1px dashed rgba(217,142,15,.5)}
+.payWait .pulseDot{margin-top:6px;flex:none}
+.payWait b{font-size:14px}
+.payWait p{font-size:13px;color:var(--mut);margin-top:3px}
+.payEmpty{padding:14px 16px;border-radius:12px;background:var(--amber-bg);color:var(--gold-ink);font-size:13px;border:1px solid rgba(217,142,15,.3)}
+.histRow{display:flex;align-items:center;gap:12px;padding:12px 18px;border-top:1px solid var(--line2);flex-wrap:wrap}
+.histRow:first-child{border-top:none}
+.histRow>div{flex:1;min-width:150px}
+.histRow small{display:block;color:var(--mut);font-size:12px}
+.tierCard.requested{border-color:var(--gold);box-shadow:0 0 0 3px rgba(239,165,28,.18)}
+.tierCard .btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+.renewMini{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+@media(max-width:640px){
+.payBody{padding:14px}
+.payAcct .btn{width:100%;justify-content:center}
+.payActions .btn{flex:1 1 100%;justify-content:center}
+.payAmt b{font-size:24px}
+.payFlow li{font-size:10.5px}
+}
+html[data-theme=dark] .payCard{background:var(--paper)}
+html[data-theme=dark] .payAcct,html[data-theme=dark] .payWait{background:#132119}
+
 /* ============ SETTINGS + HELP ============ */
 .settingsGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-bottom:40px}
 @media(max-width:900px){.settingsGrid{grid-template-columns:1fr}}
@@ -812,7 +900,7 @@ html[data-theme=dark] .avaDDHead{background:linear-gradient(135deg,#0A1F18,#0F2E
 <div class="side-label">Activity</div>
 <button type="button" class="navLink" data-nav="notif" title="Notifications"><span class="nIco"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span><span class="nTxt">Notification</span><span class="nBadge" id="sideNotifBadge" hidden>0</span></button>
 <button type="button" class="navLink" data-nav="messages" title="Messages"><span class="nIco"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span><span class="nTxt">Messages</span></button>
-<button type="button" class="navLink" data-nav="sub" title="Subscription"><span class="nIco"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><span class="nTxt">Subscription</span></button>
+<button type="button" class="navLink" data-nav="sub" title="Subscription"><span class="nIco"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><span class="nTxt">Subscription</span><span class="nBadge" id="subNavBadge" hidden>1</span></button>
 <div class="side-label">Account</div>
 <button type="button" class="navLink" data-nav="help" title="Help"><span class="nIco"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span><span class="nTxt">Help</span></button>
 <button type="button" class="navLink" data-nav="settings" title="Settings"><span class="nIco"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></span><span class="nTxt">Settings</span></button>
@@ -861,7 +949,7 @@ html[data-theme=dark] .avaDDHead{background:linear-gradient(135deg,#0A1F18,#0F2E
 
 <!-- ============ DASHBOARD ============ -->
 <div id="view-dash">
-<div class="dashGreet"><h1>Welcome back, <span id="dashHi">Coach</span></h1><span>Here's today at a glance.</span></div>
+<div class="dashGreet"><h1><span id="dashGreet">Welcome</span>, <span id="dashHi">Coach</span></h1><span>Here's today at a glance.</span></div>
 <section class="masthead reveal" id="masthead">
 <svg class="mastRings" viewBox="0 0 460 460" fill="none">
 <circle cx="230" cy="230" r="220" stroke="rgba(245,248,241,.14)" stroke-width="1.5" stroke-dasharray="4 10"/>
@@ -913,10 +1001,6 @@ Assign Client a Service
 <div class="cliGrid" id="cliGrid"></div>
 </section>
 
-<footer class="pageFoot">
-Straka · INSTRUCTOR ⇄ CLIENT · ONE TRACKED RELATIONSHIP<br>
-<button onclick="handleSignOut()">Sign Out</button>
-</footer>
 </div>
 
 <div id="view-profile" hidden>
@@ -942,7 +1026,7 @@ Straka · INSTRUCTOR ⇄ CLIENT · ONE TRACKED RELATIONSHIP<br>
 <label class="pfLbl">Specialty<input id="pfSpec" type="text" placeholder="e.g. Strength &amp; Conditioning"></label>
 </div>
 <label class="pfLbl">Bio<textarea id="pfBio" rows="3"></textarea></label>
-<div style="display:flex;justify-content:flex-end;gap:10px">
+<div class="pfActions">
 <button class="btn btn-ghost btn-sm" id="pfReset" type="button">Reset</button>
 <button class="btn btn-pine" id="pfSave" type="button">Save changes</button>
 </div>
@@ -986,7 +1070,9 @@ Straka · INSTRUCTOR ⇄ CLIENT · ONE TRACKED RELATIONSHIP<br>
 <div id="view-sub" hidden>
 <header class="pageHead"><div><span class="phEyebrow">Plan</span><h1>Subscription</h1><p class="phSub">Your tier, client slots and access.</p></div></header>
 <section class="npPanel" id="subOverview" style="padding:20px"><div class="empty" style="padding:6px">Loading your plan…</div></section>
+<div id="subPending"></div>
 <section class="npPanel"><div class="npHead">Available plans <span class="secCount">managed by admin</span></div><div id="tierGrid"></div></section>
+<section class="npPanel" id="subHistoryPanel" hidden><div class="npHead">Request history</div><div id="subHistory"></div></section>
 </div>
 
 <div id="view-help" hidden>
@@ -1002,11 +1088,11 @@ Straka · INSTRUCTOR ⇄ CLIENT · ONE TRACKED RELATIONSHIP<br>
 </section>
 <section class="npPanel"><div class="npHead">FAQ</div>
 <div style="padding:14px 16px">
-<div class="acc"><button class="accHead" type="button"><span class="accIcon faq">?</span><span class="accT"><b>Why can't I add more clients?</b><small>Plan limits</small></span><svg class="accChev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button><div class="accBody"><div class="accInner"><div class="accCopy">The <b>Free</b> plan includes 3 client slots. Upgrade from <b>Subscription</b> — request a tier and an admin activates it once payment is confirmed.</div></div></div></div>
+<div class="acc"><button class="accHead" type="button"><span class="accIcon faq">?</span><span class="accT"><b>Why can't I add more clients?</b><small>Plan limits</small></span><svg class="accChev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button><div class="accBody"><div class="accInner"><div class="accCopy">The <b>Free</b> plan includes 3 client slots. Upgrade from <b>Subscription</b> — request a tier, pay to the account shown, tap <b>I've made payment</b> and an admin activates it.</div></div></div></div>
 <div class="acc"><button class="accHead" type="button"><span class="accIcon faq">?</span><span class="accT"><b>How do clients message me?</b><small>WhatsApp outreach</small></span><svg class="accChev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button><div class="accBody"><div class="accInner"><div class="accCopy"><b>Messages</b> lists every connected client with their WhatsApp number. Pick one, edit the pre-filled template ({name} is replaced automatically), and it opens in WhatsApp.</div></div></div></div>
 <div class="acc"><button class="accHead" type="button"><span class="accIcon faq">?</span><span class="accT"><b>What does the bell icon show?</b><small>Pending actions</small></span><svg class="accChev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button><div class="accBody"><div class="accInner"><div class="accCopy">Unlogged sessions, pending payments and connect requests. The same list lives on the <b>Notification</b> page with your recent activity.</div></div></div></div>
 <div class="acc"><button class="accHead" type="button"><span class="accIcon faq">?</span><span class="accT"><b>Can I use dark mode?</b><small>Yes — Settings</small></span><svg class="accChev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button><div class="accBody"><div class="accInner"><div class="accCopy"><b>Settings → Appearance</b>. Your choice is remembered on this device. There's also an animations switch if you prefer a static UI.</div></div></div></div>
-<div class="acc"><button class="accHead" type="button"><span class="accIcon faq">?</span><span class="accT"><b>Who manages my subscription?</b><small>Admin activation</small></span><svg class="accChev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button><div class="accBody"><div class="accInner"><div class="accCopy">Tier pricing and access are configured by the platform admin. Request a switch on the <b>Subscription</b> page; it flips to active the moment the admin confirms payment.</div></div></div></div>
+<div class="acc"><button class="accHead" type="button"><span class="accIcon faq">?</span><span class="accT"><b>Who manages my subscription?</b><small>Admin activation</small></span><svg class="accChev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button><div class="accBody"><div class="accInner"><div class="accCopy">Tier pricing and access are configured by the platform admin. Request a switch on the <b>Subscription</b> page, pay using the details shown and tap <b>I've made payment</b>; your plan flips to active the moment the admin confirms (usually under a minute).</div></div></div></div>
 </div>
 </section>
 </div>
@@ -4547,51 +4633,175 @@ document.addEventListener('change',e=>{
 
 /* 8 · subscription */
 const FREE_TIER={id:'free',name:'Free',price:0,max_clients:3,min_months:0,features:['Up to 3 active clients','Session & payment tracking','WhatsApp outreach','Client share link']};
-let TIERS=[],SUB=null;
+let TIERS=[],SUB=null,REQ=null,SUBHIST=[],PAYINFO=null,SUBCH=null,_selfCancel=null;
 const currentTier=()=>(SUB&&SUB.tier)||FREE_TIER;
 const slotsUsed=()=>{try{return (S.clients||[]).length}catch(e){return 0}};
+const daysLeft=d=>d?Math.ceil((new Date(d+'T23:59:59')-new Date())/86400000):null;
+const shortDate=iso=>iso?new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+const icoClock='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+const reqTier=r=>(r&&(r.tier||TIERS.find(x=>String(x.id)===String(r.tier_id))))||{name:'Plan',price:0};
+const payRef=()=>(profile&&profile.username)||(typeof currentUser!=='undefined'&&currentUser&&currentUser.email)||'';
+function payInfo(){
+ const p=PAYINFO||{};
+ return{accounts:(p.accounts||[]).filter(a=>a&&(a.number||a.bank)),
+  steps:String(p.instructions||'').split('\n').map(s=>s.trim()).filter(Boolean),
+  whatsapp:String(p.whatsapp||'').replace(/\D/g,'')};
+}
 async function loadSubData(){
  if(typeof supabaseClient==='undefined'||typeof profile==='undefined'||!profile)return;
+ const prevReq=REQ;
  try{
   const r=await supabaseClient.from('instructor_subscriptions').select('*,tier:platform_tiers(*)').eq('instructor_id',profile.id).order('created_at',{ascending:false}).limit(20);
-  const rows=r.data||[];
-  SUB=rows.find(x=>x.status==='active')||rows[0]||null;
- }catch(e){SUB=null;}
+  SUBHIST=r.data||[];
+  SUB=SUBHIST.find(x=>x.status==='active')||null;
+  REQ=SUBHIST.find(x=>x.status==='pending')||null;
+ }catch(e){SUB=null;REQ=null;SUBHIST=[];}
  try{
   const t=await supabaseClient.from('platform_tiers').select('*').eq('active',true).order('price',{ascending:true});
   TIERS=t.data||[];
  }catch(e){TIERS=[];}
- renderSub();
+ try{
+  const p=await supabaseClient.from('platform_settings').select('value').eq('key','payment_details').maybeSingle();
+  PAYINFO=(p&&p.data&&p.data.value)||null;
+ }catch(e){PAYINFO=null;}
+ if(prevReq&&!REQ){
+  const row=SUBHIST.find(x=>x.id===prevReq.id);
+  if(SUB&&SUB.id===prevReq.id){
+   toast('🎉 Payment confirmed — you\'re now on the '+reqTier(SUB).name+' plan','ok');
+   if(document.querySelector('#modalBox .payInner'))closeModal();
+  }else if(row&&row.status==='cancelled'&&_selfCancel!==prevReq.id){
+   toast('Your plan request was declined — contact support if this looks wrong','warn');
+   if(document.querySelector('#modalBox .payInner'))closeModal();
+  }
+ }
+ renderSub();updateSubBadge();subscribeSubRealtime();
+}
+function updateSubBadge(){const b=$('#subNavBadge');if(b)b.hidden=!REQ;}
+function subscribeSubRealtime(){
+ if(SUBCH||typeof supabaseClient.channel!=='function')return;
+ try{SUBCH=supabaseClient.channel('inst-sub-'+profile.id).on('postgres_changes',{event:'*',schema:'public',table:'instructor_subscriptions',filter:'instructor_id=eq.'+profile.id},()=>loadSubData()).subscribe();}catch(e){SUBCH=null;}
+}
+setInterval(()=>{if(REQ&&!document.hidden)loadSubData();},15000);
+
+function payInnerHTML(req){
+ const t=reqTier(req),claimed=!!req.payment_claimed_at,info=payInfo(),ref=payRef();
+ const flow=`<ol class="payFlow"><li class="done"><i>${icoCheck}</i><span>Request sent</span></li><li class="${claimed?'done':'now'}"><i>${claimed?icoCheck:'2'}</i><span>Make payment</span></li><li class="${claimed?'now':''}"><i>3</i><span>Admin confirms</span></li></ol>`;
+ if(!(Number(t.price)>0)){
+  return `<div class="payInner"><div class="payWait"><span class="pulseDot"></span><div><b>Request sent</b><p>The ${esc(t.name)} plan needs no payment. An admin will switch you over shortly.</p></div></div>
+  <div class="payActions"><button class="btn btn-ghost" data-paycancel type="button">Cancel request</button></div></div>`;
+ }
+ if(claimed){
+  return `<div class="payInner">${flow}<div class="payWait"><span class="pulseDot"></span><div><b>Payment reported — thank you!</b>
+  <p>An admin is confirming your ${money(t.price)} payment for the ${esc(t.name)} plan. This page updates by itself the moment it goes live.</p>
+  <div class="payNote">${icoClock} This usually takes less than a minute.</div></div></div></div>`;
+ }
+ const accts=info.accounts.length?info.accounts.map(a=>`<div class="payAcct"><div class="who"><small>${esc(a.bank||'Bank')}</small><b>${esc(a.name||'')}</b></div>
+   <span class="num">${esc(a.number||'')}</span>${a.number?`<button class="btn btn-ghost btn-sm" type="button" data-act="copy" data-copy="${esc(a.number)}">Copy number</button>`:''}</div>`).join('')
+  :`<div class="payEmpty">Payment details haven't been set up yet. ${info.whatsapp?`<a href="https://wa.me/${info.whatsapp}" target="_blank" rel="noopener">Message support on WhatsApp</a> and we'll sort you out.`:'Please contact support to complete your upgrade.'}</div>`;
+ const steps=(info.steps.length?info.steps.map(esc):[`Transfer exactly <b>${money(t.price)}</b> to the account above.`,ref?`Use <b>${esc(ref)}</b> as the payment reference so we can match it.`:null].filter(Boolean))
+  .concat(['Come back here and tap <b>I\'ve made payment</b>.']);
+ return `<div class="payInner">${flow}
+ <div class="payAmt"><div><small>Amount to pay</small><b>${money(t.price)}</b><em>per month · ${esc(t.name)} plan${t.min_months?' · min '+t.min_months+' mo':''}</em></div>
+  <button class="btn btn-outlineLight btn-sm" type="button" data-act="copy" data-copy="${Number(t.price)}">Copy amount</button></div>
+ ${accts}
+ ${ref?`<div class="payRef">Payment reference <code>${esc(ref)}</code><button class="btn btn-ghost btn-sm" type="button" data-act="copy" data-copy="${esc(ref)}">Copy</button></div>`:''}
+ <ol class="paySteps">${steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+ <div class="payActions"><button class="btn btn-gold" type="button" data-payclaim>I've made payment</button><button class="btn btn-ghost" type="button" data-paycancel>Cancel request</button></div>
+ <div class="payNote">${icoClock} Once you tap it, admin confirmation takes less than a minute.</div></div>`;
+}
+function openPayModal(){
+ if(!REQ)return;
+ const t=reqTier(REQ);
+ openModal(`<header><h3>${REQ.payment_claimed_at?'Awaiting confirmation':'Complete your upgrade'}</h3><button class="iconBtn" onclick="closeModal()">✕</button></header>
+ <div class="mSub">Your request for the ${esc(t.name)} plan has been sent to the admin.</div>
+ <div class="mBody">${payInnerHTML(REQ)}</div>
+ <footer><button class="btn btn-ghost" type="button" onclick="closeModal()">Close</button></footer>`,true);
 }
 function renderSub(){
  const box=$('#subOverview');if(!box)return;
  const t=currentTier(),used=slotsUsed(),cap=t.max_clients??3;
- const st=(SUB&&SUB.status)||'active',paid=SUB?SUB.paid!==false:true;
+ const paid=SUB?SUB.paid!==false:true;
  const pct=cap?Math.min(100,Math.round(used/cap*100)):100;
+ const left=SUB&&SUB.ends_on?daysLeft(SUB.ends_on):null;
+ let note='';
+ if(SUB&&!paid)note='<div class="pendMini" style="margin-top:14px">Your payment for this plan is still being verified.</div>';
+ else if(left!==null&&left<=7&&!REQ)note=`<div class="pendMini renewMini" style="margin-top:14px"><span>${left<0?'Your plan has ended.':'Your plan ends in '+left+' day'+(left===1?'':'s')+'.'} Renew to keep your client slots.</span><button class="btn btn-gold btn-sm" type="button" data-upgrade="${esc(SUB.tier_id)}">Renew</button></div>`;
  box.innerHTML=`<div class="subTop">
- <div><span class="chip ${st==='active'&&paid?'st-active':'st-paused'}">${esc(st)}${paid?'':' · payment due'}</span>
+ <div><span class="chip ${SUB&&!paid?'st-paused':'st-active'}">active${SUB&&!paid?' · verifying payment':''}</span>
  <h2>${esc(t.name)} plan</h2>
  <p class="phSub">${t.price?money(t.price)+' / month':'Free forever'}${SUB&&SUB.ends_on?' · renews '+fmtDate(SUB.ends_on):''}</p></div>
  <div class="subSlots"><b>${used}<span>/${cap}</span></b><span>client slots</span><div class="bar"><i style="width:${pct}%"></i></div></div></div>
- <ul class="featList">${(t.features||[]).map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
- ${(!paid||st!=='active')?'<div class="pendMini" style="margin-top:14px">Access is limited until an admin confirms payment.</div>':''}`;
+ <ul class="featList">${(t.features||[]).map(f=>`<li>${esc(f)}</li>`).join('')}</ul>${note}`;
+ // pending request / payment panel
+ const pw=$('#subPending');
+ if(pw){
+  if(REQ){const rt=reqTier(REQ);
+   pw.innerHTML=`<section class="npPanel payCard"><div class="npHead"><span class="pulseDot"></span>${REQ.payment_claimed_at?'Awaiting admin confirmation':'Complete your upgrade'}<span class="secCount">${esc(rt.name)}${rt.price?' · '+money(rt.price)+'/mo':''}</span></div><div class="payBody">${payInnerHTML(REQ)}</div></section>`;
+  }else pw.innerHTML='';
+ }
+ // plan cards
  const grid=$('#tierGrid');if(!grid)return;
  const list=TIERS.filter(x=>x.id!==(SUB&&SUB.tier_id));
- grid.innerHTML=list.map(x=>`<div class="tierCard"><h3>${esc(x.name)}</h3>
+ const locked=!!(REQ&&REQ.payment_claimed_at);
+ grid.innerHTML=list.map(x=>{
+  const isReq=REQ&&String(REQ.tier_id)===String(x.id);
+  const btn=isReq?`<button class="btn btn-gold btn-block" type="button" data-payview>${REQ.payment_claimed_at?'View status':'View payment details'}</button>`
+   :`<button class="btn ${x.price?'btn-gold':'btn-ghost'} btn-block" type="button" data-upgrade="${esc(x.id)}" ${locked?'disabled title="You have a payment awaiting confirmation"':''}>Switch to ${esc(x.name)}</button>`;
+  return `<div class="tierCard${isReq?' requested':''}"><h3>${esc(x.name)}</h3>
  <div class="tierPrice">${x.price?money(x.price):'Free'}<em>/mo</em></div>
  <div class="tierMeta"><span>Up to <b>${x.max_clients}</b> clients</span>${x.min_months?`<span>Min ${x.min_months} mo</span>`:''}</div>
- <ul>${(x.features||[]).map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
- <button class="btn ${x.price?'btn-gold':'btn-ghost'} btn-block" data-upgrade="${esc(x.id)}">Switch to ${esc(x.name)}</button></div>`).join('')
+ <ul>${(x.features||[]).map(f=>`<li>${esc(f)}</li>`).join('')}</ul>${btn}</div>`;}).join('')
  ||'<div class="empty" style="padding:16px 18px">No upgrade tiers published yet — an admin adds them in the admin panel.</div>';
+ // history
+ const hp=$('#subHistoryPanel'),hl=$('#subHistory');
+ if(hp&&hl){
+  hp.hidden=!SUBHIST.length;
+  hl.innerHTML=SUBHIST.map(x=>{
+   const tt=reqTier(x);
+   const m={active:['Active','st-active'],cancelled:['Cancelled','st-draft'],expired:['Expired','st-expired']}[x.status]||[x.payment_claimed_at?'Confirming':'Awaiting payment','st-paused'];
+   return `<div class="histRow"><div><b>${esc(tt.name)}</b><small>${tt.price?money(tt.price)+'/mo':'Free'} · requested ${shortDate(x.created_at)}${x.ends_on&&x.status==='active'?' · until '+fmtDate(x.ends_on):''}</small></div><span class="chip ${m[1]}">${m[0]}</span></div>`;
+  }).join('');
+ }
 }
-async function requestUpgrade(id){
+async function requestUpgrade(id,btn){
+ if(typeof profile==='undefined'||!profile)return;
+ if(REQ&&REQ.payment_claimed_at){toast('You already have a payment awaiting confirmation','warn');return;}
+ if(btn)btn.disabled=true;
+ const tier=TIERS.find(x=>String(x.id)===String(id))||(SUB&&SUB.tier);
  try{
-  const {error}=await supabaseClient.from('instructor_subscriptions').insert({instructor_id:profile.id,tier_id:id,status:'pending',paid:false});
-  if(error)throw error;
-  toast('Request sent — an admin activates it once payment is confirmed','ok');loadSubData();
- }catch(e){toast('Could not send request — check table permissions','warn');}
+  const q=REQ?supabaseClient.from('instructor_subscriptions').update({tier_id:id}).eq('id',REQ.id)
+   :supabaseClient.from('instructor_subscriptions').insert({instructor_id:profile.id,tier_id:id,status:'pending',paid:false});
+  const {error}=await q;if(error)throw error;
+  await loadSubData();
+  if(tier&&Number(tier.price)>0)openPayModal();
+  else toast('Request sent — an admin will switch you to '+(tier?tier.name:'that plan')+' shortly','ok');
+ }catch(e){console.error(e);toast('Could not send request — '+(e&&e.message?e.message:'check table permissions'),'warn');}
+ finally{if(btn)btn.disabled=false;}
 }
-document.addEventListener('click',e=>{const b=e.target.closest('[data-upgrade]');if(b)requestUpgrade(b.dataset.upgrade);});
+async function claimPayment(btn){
+ if(!REQ)return;
+ if(btn)btn.disabled=true;
+ const {error}=await supabaseClient.from('instructor_subscriptions').update({payment_claimed_at:new Date().toISOString()}).eq('id',REQ.id);
+ if(error){console.error(error);toast('Could not notify the admin — please try again','warn');if(btn)btn.disabled=false;return;}
+ if(document.querySelector('#modalBox .payInner'))closeModal();
+ toast('Admin notified — confirming your payment now','ok');
+ await loadSubData();
+ $('#subPending')?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+async function cancelRequest(){
+ if(!REQ||!confirm('Cancel this plan request?'))return;
+ _selfCancel=REQ.id;
+ const {error}=await supabaseClient.from('instructor_subscriptions').update({status:'cancelled'}).eq('id',REQ.id);
+ if(error){toast('Could not cancel — '+error.message,'warn');return;}
+ if(document.querySelector('#modalBox .payInner'))closeModal();
+ toast('Request cancelled','ok');loadSubData();
+}
+document.addEventListener('click',e=>{
+ const up=e.target.closest('[data-upgrade]');if(up){if(!up.disabled)requestUpgrade(up.dataset.upgrade,up);return;}
+ if(e.target.closest('[data-payview]')){openPayModal();return;}
+ const pc=e.target.closest('[data-payclaim]');if(pc){claimPayment(pc);return;}
+ if(e.target.closest('[data-paycancel]')){cancelRequest();return;}
+});
 /* hard cap: intercept Assign before the app's own handler runs */
 document.addEventListener('click',e=>{
  if(!e.target.closest('[data-act="assign"]'))return;
@@ -4706,6 +4916,10 @@ function refreshIdentityUI(){
  const sa=$('#sideAva');if(sa&&!sa.style.backgroundImage)sa.textContent=ini;
  const big=$('#profBigAva');if(big&&!big.querySelector('img'))big.textContent=ini;
 }
+function greetWord(d=new Date()){const h=d.getHours();return h<5?'Good evening':h<12?'Good morning':h<17?'Good afternoon':'Good evening';}
+function updateGreeting(){const g=document.getElementById('dashGreet');if(g)g.textContent=greetWord();}
+updateGreeting();setInterval(updateGreeting,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateGreeting();});
 let tries=0;const pt=setInterval(()=>{
  if(typeof profile!=='undefined'&&profile){
   refreshIdentityUI();fillProfileForm();
